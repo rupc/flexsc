@@ -1,0 +1,3 @@
+arch/x86/entry/entry_64.S
+include/linux/sched.h:add flexsc_syspage to task_struct
+
