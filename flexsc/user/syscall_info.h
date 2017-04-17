@@ -1,6 +1,9 @@
 #define __NR_read 0
+#define __ARGS_read 3
 #define __NR_write 1
+#define __ARGS_write 3
 #define __NR_open 2
+#define __ARGS_open 2
 #define __NR_close 3
 #define __NR_stat 4
 #define __NR_fstat 5
