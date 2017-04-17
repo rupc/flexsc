@@ -63,7 +63,7 @@ struct flexsc_sysentry {
     unsigned syscall_number;
     long sysargs[6];
     long ret_val;
-};
+} ____cacheline_aligned_in_smp;
 
 
 /**
@@ -87,6 +87,9 @@ int flexsc_disable_hook(void);
 void flexsc_map_syspage(void);
 void flexsc_create_systhread_pool(void);
 void flexsc_clone_systhread(void);  
+
+void create_flexsc_systhread(void);
+
 
 #define bitmap_nr(h_pid) (h_pid % 64)
 #define bitmap_mem(h_pid) (h_pid / 64)
