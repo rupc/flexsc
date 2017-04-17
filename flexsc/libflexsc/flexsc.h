@@ -36,7 +36,13 @@ struct flexsc_init_info {
     struct flexsc_cpuinfo pinned_cpu; 
 };
 
-struct flexsc_sysentry* flexsc_register(void);
+struct flexsc_cb {
+    void (*callback) (struct flexsc_cb *);
+    void *args;
+    int64_t ret;
+};
+
+struct flexsc_sysentry *flexsc_register(struct flexsc_init_info *info);
 void flexsc_wait(void);
 
 /* Find free sysentry and returns it */
