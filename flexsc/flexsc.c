@@ -32,6 +32,13 @@ sys_flexsc_register(struct flexsc_reg_info __user *info)
     /* flexsc_sysentry size should be same as cache line */
     /* WARN_ON(sizeof(struct flexsc_sysentry) == FLEXSC_CACHE_LINE_SZIE); */
 
+    if (sizeof(struct flexsc_sysentry) != FLEXSC_CACHE_LINE_SZIE) {
+        /* printk(KERN_EMERG "Mismatch for cache line size
+                and sysentry\n"); */
+        return FLEXSC_ERR_CACHE_LINE_MISMATCH;
+    }
+    
+
     /* Address size should be same as long */
     /* WARN_ON(sizeof(void *) == sizeof(long)); */
     

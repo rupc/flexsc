@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <unistd.h>
 #include <sys/types.h>
 #include "flexsc_cpu.h"

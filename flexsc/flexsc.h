@@ -8,8 +8,11 @@
 #include <linux/mman.h>
 #include <linux/slab.h>
 
+#include <asm/cache.h>
+
 #define FLEXSC_ERR_INIT_TGROUP_EMPTY 500
 #define FLEXSC_ERR_INIT_COPY 501
+#define FLEXSC_ERR_CACHE_LINE_MISMATCH 502
 
 #define FLEXSC_ALREADY_HOOKED 400
 #define FLEXSC_ALREADY_NOT_HOOKED 401
@@ -20,7 +23,9 @@
 #define FLEXSC_STATUS_BUSY 3
 
 #define FLEXSC_PAGE_SIZE 4096
-#define FLEXSC_ENTRY_SIZE 64
+
+/* L1_CACHE_BYTES usually is 64 */
+#define FLEXSC_ENTRY_SIZE L1_CACHE_BYTES
 
  /*
   * !Important 
