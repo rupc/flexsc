@@ -66,7 +66,7 @@ struct flexsc_reg_info {
 struct flexsc_sysentry {
     unsigned request_status;
     unsigned syscall_number;
-    long sysargs[6];
+    long args[6];
     long ret_val;
 } ____cacheline_aligned_in_smp;
 

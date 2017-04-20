@@ -1,10 +1,10 @@
 src=user-program.c
 obj=$(src:.c=.o)
 exe=$(src:.c=)
-inc=syscall_info.h
+inc=syscall_info.h 
 
 default:
-	gcc $(src) -o $(exe) $(inc)
+	gcc $(src) -o $(exe) $(inc) -I. -lflexsc
 
 run:
 	./$(exe)

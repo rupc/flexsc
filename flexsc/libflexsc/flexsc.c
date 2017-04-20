@@ -4,36 +4,72 @@
 
 #define SYSPAGE_PER_TASK 2
 
-inline static void __flexsc_register(struct flexsc_reg_info *info) 
+
+/**
+ * @brief * Initialize which CPUs are pinned to user threads or kernel threads.
+ * Default setting assumes 8 cores which has 4 cores enabled with Hyper threading.
+ * But for measuring correct result, Turing HT off is recommended.
+ * @param cpuinfo
+ */
+void init_cpuinfo_default(struct flexsc_cpuinfo *cpuinfo)
 {
-    syscall(400, info);
+    cpuinfo->user_cpu = FLEXSC_CPU_CLEAR;
+    cpuinfo->kernel_cpu = FLEXSC_CPU_CLEAR;
+
+    /* cpuinfo->user_cpu = FLEXSC_CPU_0 | FLEXSC_CPU_1;
+    cpuinfo->kernel_cpu = FLEXSC_CPU_2 | FLEXSC_CPU_3; */
+
+    cpuinfo->user_cpu = FLEXSC_CPU_0 | FLEXSC_CPU_1 | FLEXSC_CPU_2 | FLEXSC_CPU_3;
+    cpuinfo->kernel_cpu = FLEXSC_CPU_4 | FLEXSC_CPU_5 | FLEXSC_CPU_6 | FLEXSC_CPU_7;
 
 }
-void flexsc_register(void)
+
+void init_user_affinity(struct flexsc_cpuinfo *ucpu)
 {
-    int pg_size = getpagesize();
+    cpu_set_t user_set;
+    int ucpus = ucpu->user_cpu;
+    CPU_ZERO(&user_set);
+    CPU_SET(ucpus, &user_set);
+    sched_setaffinity(0, sizeof(cpu_set_t), &user_set);
+}
 
-    struct flexsc_reg_info info = {
-        .max_threads = 10,
-        .stack_base = 20,
-        .stack_size = 30
-    };
+int init_info_default(struct flexsc_init_info *info) 
+{
+    info->npages = SYSPAGE_PER_TASK;
+    info->sysentry = (struct flexsc_sysentry *)aligned_alloc(getpagesize(), info->npages);
 
-    /* void * aligned_alloc (size_t alignment, size_t size) */
-    unsigned long *addr =  (unsigned long *)aligned_alloc(getpagesize(), SYSPAGE_PER_TASK);
+    /* info->sysentry[0].nargs = 3; */
+    printf("%p\n", info->sysentry);
+    init_cpuinfo_default(&(info->cpuinfo));
 
-    printf("addr : %p, sz : %lu\n", addr, sizeof(*addr));
-
-    if (addr == NULL) {
-        printf("ALLOCATION ERROR on %d\n", __LINE__);
+    if (info->sysentry == NULL) {
+        printf("ALLOCATION ERROR, %s %d\n", __FUNCTION__,  __LINE__);
+        return FLEXSC_ERR_ALLOC;
     }
 
-    printf("page size : %d\n", pg_size);
-
-
-    __flexsc_register(&info);
-    printf("%lu %lu %lu\n", info.max_threads, info.stack_base, info.stack_size);
+    /* Set CPU Affinity */
+    init_user_affinity(&(info->cpuinfo));
+    return 0;
 }
+
+int init_info(struct flexsc_init_info *info)
+{
+    init_info_default(info);
+
+    return 0;
+}
+
+
+struct flexsc_sysentry *
+flexsc_register(struct flexsc_init_info *info)
+{
+    init_info(info);
+
+    return info->sysentry;
+
+    /* __flexsc_register(&info); */
+}
+
 void flexsc_wait(void) 
 {
     syscall(401);
