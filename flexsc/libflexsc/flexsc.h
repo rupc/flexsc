@@ -80,7 +80,7 @@ void flexsc_hook(void);
 
 pid_t gettid(void);
 
-inline static void __flexsc_register(struct flexsc_init_info *info) 
+static void __flexsc_register(struct flexsc_init_info *info) 
 {
     syscall(400, info);
 }

@@ -7,9 +7,13 @@ sys_flexsc_register(struct flexsc_init_info __user *info)
 {
 
     struct task_struct *task;
-    struct flexsc_reg_info reg_info;
 
-    /* printk("size of flexsc_sysentry : %ld\n", sizeof(struct flexsc_sysentry)); */
+    printk("Here is in kernel I want to exploit info struct from user to generate worker thread....\n");
+    printk("%p %d %d\n",
+            &(info->sysentry[0]), info->sysentry[0].nargs,
+            info->sysentry[30].rstatus);
+    printk("%ld %ld %ld\n", info->npages, info->total_bytes, info->nentry);
+
 
     /* flexsc_sysentry size should be same as cache line */
     /* WARN_ON(sizeof(struct flexsc_sysentry) == FLEXSC_CACHE_LINE_SZIE); */
@@ -26,38 +30,10 @@ sys_flexsc_register(struct flexsc_init_info __user *info)
     
     task = current;
 
-    /* init_syspage(task->syspage); */
-
-    /* task->syspage = (struct flexsc_syspage *)test_address; */
 
     task->flexsc_enabled = 1;
 
-    /* printk("plz:%d %p\n", task->pid, task->syspage); */
-    printk("plz:%d\n", task->pid);
-
-    if (!thread_group_empty(task)) {
-        return FLEXSC_ERR_INIT_TGROUP_EMPTY;
-    }
-
-    if (copy_from_user(&reg_info, info, sizeof(reg_info)) != 0) {
-        return FLEXSC_ERR_INIT_COPY;
-    }
-
-    /* Do some with user struct */
-
-    if (copy_to_user(info, &reg_info, sizeof(reg_info) != 0)) {
-        return FLEXSC_ERR_INIT_COPY;
-    }
-
-
-    /* printk("Start FlexSC hook here!\n"); */
-
-    if(flexsc_enable_hook() == FLEXSC_ALREADY_HOOKED) {
-        printk("Already Enabled FlexSC Hook\n");
-    }
-
-    /* printk("pid:%d\n", task->pid); */
-    flexsc_start_hook(task->pid);
+    /* flexsc_start_hook(task->pid); */
 
     return 0;
 }

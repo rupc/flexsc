@@ -117,9 +117,9 @@ flexsc_register(struct flexsc_init_info *info)
 {
     init_info(info);
 
+    __flexsc_register(info);
     return info->sysentry;
 
-    /* __flexsc_register(&info); */
 }
 
 void flexsc_wait(void) 

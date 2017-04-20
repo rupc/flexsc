@@ -53,18 +53,32 @@
  */
 #define FLEXSC_CACHE_LINE_SZIE 64
 
+struct flexsc_cpuinfo {
+    int user_cpu;
+    int kernel_cpu;
+};
+
 
 // asmlinkage void flexsc_syscall_hook(struct pt_regs *regs)
 /**
  * @brief Define syscall entry. It should be same as cache line(64 bytes)
  */
 struct flexsc_sysentry {
-    unsigned request_status;
-    unsigned syscall_number;
     long args[6];
-    long ret_val;
+    unsigned nargs;
+    unsigned short rstatus;
+    unsigned short sysnum;
+    unsigned sysret;
 } ____cacheline_aligned_in_smp;
 
+
+struct flexsc_init_info {
+    struct flexsc_sysentry *sysentry; /* Pointer to first sysentry */
+    struct flexsc_cpuinfo cpuinfo; 
+    size_t npages; /* Number of Syspages */
+    size_t nentry; /* # of workers should be equal to # of sysentries */
+    size_t total_bytes;
+};
 
 /**
  * @brief syspage size should be 4KB(linux page size)
