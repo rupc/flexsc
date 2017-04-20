@@ -1,6 +1,26 @@
+/* Copyright (C) 
+ * 2017 - Yongrae Jo
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * 
+ */
+
 #define _GNU_SOURCE
+
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <stdarg.h>
 #include <sched.h>
 #include "flexsc_cpu.h"
@@ -15,6 +35,8 @@
 #define FLEXSC_STATUS_BUSY 3
 
 #define FLEXSC_ERR_ALLOC 600
+#define FLEXSC_ERR_LOCKSYSPAGE 601
+#define FLEXSC_ERR_MAPSYSPAGE 602
 
 struct flexsc_reg_info {
     unsigned long max_threads;
@@ -40,6 +62,7 @@ struct flexsc_sysentry {
 struct flexsc_init_info {
     struct flexsc_sysentry *sysentry; /* Pointer to first sysentry */
     unsigned npages; /* Number of Syspages */
+    size_t total_bytes;
     struct flexsc_cpuinfo cpuinfo; 
 };
 

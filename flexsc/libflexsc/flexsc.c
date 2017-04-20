@@ -50,20 +50,56 @@ void init_user_affinity(struct flexsc_cpuinfo *ucpu)
     CPU_SET(3, &user_set); */
     sched_setaffinity(0, sizeof(cpu_set_t), &user_set);
 }
+/* Prevent syspage from swapping out */
+int init_lock_syspage(struct flexsc_init_info *info)
+{
+    int error;
+    if (info->sysentry == NULL) {
+        return -1;
+    }
+    
+    error = mlock(info->sysentry, info->total_bytes);
+    
+    if (error == 0) {
+        return FLEXSC_ERR_LOCKSYSPAGE;
+    }
+
+    return 0;
+}
+
+int init_map_syspage(struct flexsc_init_info *info)
+{
+    size_t pgsize = getpagesize();
+    size_t total = pgsize * SYSPAGE_PER_TASK;
+    struct flexsc_sysentry *entry;
+
+    info->npages = SYSPAGE_PER_TASK;
+    entry = (struct flexsc_sysentry *)aligned_alloc(pgsize, info->npages);
+
+    if (entry == NULL) {
+        return FLEXSC_ERR_MAPSYSPAGE;
+    }
+
+    /* if (info->sysentry == NULL) {
+        printf("ALLOCATION ERROR, %s %d\n", __FUNCTION__,  __LINE__);
+        return FLEXSC_ERR_ALLOC;
+    } */
+
+    info->sysentry = entry;
+    info->total_bytes = total;
+
+    return 0;
+}
 
 int init_info_default(struct flexsc_init_info *info) 
 {
-    info->npages = SYSPAGE_PER_TASK;
-    info->sysentry = (struct flexsc_sysentry *)aligned_alloc(getpagesize(), info->npages);
+    /* Allocate syspage and map it to user space */
+    init_map_syspage(info);
 
-    /* info->sysentry[0].nargs = 3; */
-    /* printf("%p\n", info->sysentry); */
+    /* Prevent syspage from swapping out */
+    init_lock_syspage(info);
+
     init_cpuinfo_default(&(info->cpuinfo));
-
-    if (info->sysentry == NULL) {
-        printf("ALLOCATION ERROR, %s %d\n", __FUNCTION__,  __LINE__);
-        return FLEXSC_ERR_ALLOC;
-    }
 
     /* Set CPU Affinity */
     init_user_affinity(&(info->cpuinfo));
