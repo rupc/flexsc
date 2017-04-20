@@ -82,6 +82,8 @@ int main(int argc, const char *argv[])
 
     flexsc_wait(); */
 
+    sleep(50000);
+
     return 0;
 }
     /* printf("hello!\n"); */

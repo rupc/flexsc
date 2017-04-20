@@ -28,8 +28,26 @@ void init_user_affinity(struct flexsc_cpuinfo *ucpu)
 {
     cpu_set_t user_set;
     int ucpus = ucpu->user_cpu;
+    int cpu_num = 0;
+
     CPU_ZERO(&user_set);
-    CPU_SET(ucpus, &user_set);
+    /* CPU_SET(ucpus, &user_set); */
+    printf("ucpus:%x\n", ucpus);
+
+    while (ucpus) {
+        if (ucpus & 0x1) {
+            CPU_SET(cpu_num, &user_set);
+        }
+
+        ucpus = ucpus >> 1;
+        ++cpu_num;
+    }
+    printf("ucpus:%x\n", ucpus);
+
+    /* CPU_SET(0, &user_set);
+    CPU_SET(1, &user_set);
+    CPU_SET(2, &user_set);
+    CPU_SET(3, &user_set); */
     sched_setaffinity(0, sizeof(cpu_set_t), &user_set);
 }
 
@@ -39,7 +57,7 @@ int init_info_default(struct flexsc_init_info *info)
     info->sysentry = (struct flexsc_sysentry *)aligned_alloc(getpagesize(), info->npages);
 
     /* info->sysentry[0].nargs = 3; */
-    printf("%p\n", info->sysentry);
+    /* printf("%p\n", info->sysentry); */
     init_cpuinfo_default(&(info->cpuinfo));
 
     if (info->sysentry == NULL) {
