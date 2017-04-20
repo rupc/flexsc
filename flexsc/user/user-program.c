@@ -21,8 +21,7 @@
  ******************************************************************
 */
 
-__attribute__((always_inline)) 
-inline void
+__always_inline inline void
 request_syscall_getpid(struct flexsc_sysentry *entry) 
 {
     entry->sysnum = __NR_getpid;
@@ -30,7 +29,8 @@ request_syscall_getpid(struct flexsc_sysentry *entry)
     entry->rstatus = FLEXSC_STATUS_SUBMITTED;
 }
 
-inline void request_syscall_write(struct flexsc_sysentry *entry, int fd, char *buf, size_t sz)
+__always_inline inline void 
+request_syscall_write(struct flexsc_sysentry *entry, int fd, char *buf, size_t sz)
 {
     entry->sysnum = __NR_write;
     entry->nargs = __ARGS_write;
@@ -53,24 +53,20 @@ int main(int argc, const char *argv[])
 {
     struct flexsc_sysentry *fentry;
     struct flexsc_init_info info;
+    int i;
+    int num_entry;
 
     fentry = flexsc_register(&info);
-    printf("%d %lu\n", info.npages, sizeof(*fentry));
+    num_entry = info.nentry;
 
-    /* printf("%p, %p\n", info.sysentry, fentry); */
-
-    printf("%d\n", info.sysentry[0].nargs);
-
-    printf("%d %d\n", fentry[0].sysnum, fentry[0].nargs);
-    printf("%d %d\n", fentry[1].sysnum, fentry[1].nargs);
-    printf("%d %d\n", fentry[2].sysnum, fentry[2].nargs);
-    printf("%d %d\n", fentry[3].sysnum, fentry[3].nargs);
-
-    /* printf("%d \n", fentry[0].sysnum, fentry[0].nargs); */
 
     request_syscall_getpid(&fentry[0]);
     printf("%d\n", fentry[0].sysnum);
 
+    printf("num entry: %d\n", num_entry);
+    for (i = 0; i < num_entry; i++) {
+        print_sysentry(&fentry[i]);
+    }
 
     /* fentry = free_syscall_entry();
 
@@ -82,7 +78,6 @@ int main(int argc, const char *argv[])
 
     flexsc_wait(); */
 
-    sleep(50000);
 
     return 0;
 }

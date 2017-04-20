@@ -29,6 +29,7 @@
 #define SYSCALL_FLEXSC_WAIT 401
 #define SYSCALL_FLEXSC_HOOK 402
 
+/* When initialize sysentry, each field is filld with zero which means *Free*  */
 #define FLEXSC_STATUS_FREE 0 
 #define FLEXSC_STATUS_SUBMITTED 1
 #define FLEXSC_STATUS_DONE 2
@@ -38,11 +39,6 @@
 #define FLEXSC_ERR_LOCKSYSPAGE 601
 #define FLEXSC_ERR_MAPSYSPAGE 602
 
-struct flexsc_reg_info {
-    unsigned long max_threads;
-    unsigned long stack_base;
-    unsigned long stack_size;
-};
 
 struct flexsc_cpuinfo {
     int user_cpu;
@@ -61,9 +57,10 @@ struct flexsc_sysentry {
 
 struct flexsc_init_info {
     struct flexsc_sysentry *sysentry; /* Pointer to first sysentry */
-    unsigned npages; /* Number of Syspages */
-    size_t total_bytes;
     struct flexsc_cpuinfo cpuinfo; 
+    size_t npages; /* Number of Syspages */
+    size_t nentry; /* # of workers should be equal to # of sysentries */
+    size_t total_bytes;
 };
 
 struct flexsc_cb {
@@ -83,7 +80,8 @@ void flexsc_hook(void);
 
 pid_t gettid(void);
 
-inline static void __flexsc_register(struct flexsc_reg_info *info) 
+inline static void __flexsc_register(struct flexsc_init_info *info) 
 {
     syscall(400, info);
 }
+void print_sysentry(struct flexsc_sysentry *entry);

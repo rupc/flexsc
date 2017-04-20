@@ -2,30 +2,12 @@
 
 pid_t hooked_task[FLEXSC_MAX_HOOKED];
 
-static unsigned long test_address = 0x80000000;
-
-static void print_reg_info(struct flexsc_reg_info *info)
-{
-    printk("%lu %lu %lu\n",
-            info->max_threads, info->stack_base, info->stack_size);
-}
-
-static void set_reg_info(struct flexsc_reg_info *info)
-{
-    info->max_threads = 100;
-    info->stack_base = 200;
-    info->stack_size = 300;
-}
-
 asmlinkage long 
-sys_flexsc_register(struct flexsc_reg_info __user *info)
+sys_flexsc_register(struct flexsc_init_info __user *info)
 {
 
     struct task_struct *task;
     struct flexsc_reg_info reg_info;
-    print_reg_info(info);
-    set_reg_info(info);
-    print_reg_info(info);
 
     /* printk("size of flexsc_sysentry : %ld\n", sizeof(struct flexsc_sysentry)); */
 

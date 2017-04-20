@@ -53,11 +53,6 @@
  */
 #define FLEXSC_CACHE_LINE_SZIE 64
 
-struct flexsc_reg_info {
-    unsigned long max_threads;
-    unsigned long stack_base;
-    unsigned long stack_size;
-};
 
 // asmlinkage void flexsc_syscall_hook(struct pt_regs *regs)
 /**

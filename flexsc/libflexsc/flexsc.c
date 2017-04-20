@@ -32,7 +32,7 @@ void init_user_affinity(struct flexsc_cpuinfo *ucpu)
 
     CPU_ZERO(&user_set);
     /* CPU_SET(ucpus, &user_set); */
-    printf("ucpus:%x\n", ucpus);
+    /* printf("ucpus:%x\n", ucpus); */
 
     while (ucpus) {
         if (ucpus & 0x1) {
@@ -42,7 +42,7 @@ void init_user_affinity(struct flexsc_cpuinfo *ucpu)
         ucpus = ucpus >> 1;
         ++cpu_num;
     }
-    printf("ucpus:%x\n", ucpus);
+    /* printf("ucpus:%x\n", ucpus); */
 
     /* CPU_SET(0, &user_set);
     CPU_SET(1, &user_set);
@@ -50,10 +50,12 @@ void init_user_affinity(struct flexsc_cpuinfo *ucpu)
     CPU_SET(3, &user_set); */
     sched_setaffinity(0, sizeof(cpu_set_t), &user_set);
 }
+
 /* Prevent syspage from swapping out */
 int init_lock_syspage(struct flexsc_init_info *info)
 {
     int error;
+
     if (info->sysentry == NULL) {
         return -1;
     }
@@ -80,11 +82,7 @@ int init_map_syspage(struct flexsc_init_info *info)
         return FLEXSC_ERR_MAPSYSPAGE;
     }
 
-    /* if (info->sysentry == NULL) {
-        printf("ALLOCATION ERROR, %s %d\n", __FUNCTION__,  __LINE__);
-        return FLEXSC_ERR_ALLOC;
-    } */
-
+    info->nentry = total / sizeof(entry[0]);
     info->sysentry = entry;
     info->total_bytes = total;
 
@@ -139,3 +137,4 @@ pid_t gettid(void)
 {
     return syscall(186);
 }
+
