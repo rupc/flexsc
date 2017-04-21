@@ -24,6 +24,7 @@
 #include <stdarg.h>
 #include <sched.h>
 #include "flexsc_cpu.h"
+#include "syscall_info.h"
 
 #define SYSCALL_FLEXSC_REGISTER 400
 #define SYSCALL_FLEXSC_WAIT 401

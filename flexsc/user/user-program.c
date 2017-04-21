@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include "syscall_info.h"
+/* #include "syscall_info.h" */
 #include "../libflexsc/flexsc.h"
 
 /* This program contains system calls listed in table1, flexsc paper(OSDI 10),
@@ -61,8 +61,11 @@ int main(int argc, const char *argv[])
 
 
     request_syscall_getpid(&fentry[0]);
-    printf("%d\n", fentry[0].sysnum);
+    char buf[20] = "hello";
+    size_t sz = 20;
+    request_syscall_write(&fentry[1], 1, buf, sz);
 
+    printf("%d\n", fentry[0].sysnum);
     printf("num entry: %d\n", num_entry);
     for (i = 0; i < num_entry; i++) {
         print_sysentry(&fentry[i]);
