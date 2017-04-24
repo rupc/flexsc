@@ -12,6 +12,7 @@
 #include <linux/threads.h>
 #include <linux/atomic.h>
 #include <linux/cpumask.h>
+#include <linux/flexsc.h>
 
 struct workqueue_struct;
 
@@ -221,6 +222,11 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
 		(_work)->func = (_func);				\
 	} while (0)
 #endif
+#define FLEXSC_INIT_WORK(_work, _func, _entry)          \
+    do {                                                \
+        __INIT_WORK(_work, _func)                       \
+        (_work)->work_entry = (_entry);              \
+    } while(0)
 
 #define INIT_WORK(_work, _func)						\
 	__INIT_WORK((_work), (_func), 0)

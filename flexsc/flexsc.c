@@ -8,7 +8,7 @@ sys_flexsc_register(struct flexsc_init_info __user *info)
 
     struct task_struct *task;
     struct worker_pool *pool;
-    need_to_create_worker(pool);
+    /* need_to_create_worker(pool); */
     printk("Here is in kernel I want to exploit info struct from user to generate worker thread....\n");
     printk("%p %d %d\n",
             &(info->sysentry[0]), info->sysentry[0].nargs,
