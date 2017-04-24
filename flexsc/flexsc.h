@@ -7,6 +7,7 @@
 #include <asm/uaccess.h>
 #include <linux/mman.h>
 #include <linux/slab.h>
+#include <linux/workqueue.h>
 
 #include <asm/cache.h>
 
@@ -88,6 +89,8 @@ struct flexsc_syspage {
     struct flexsc_sysentry *entries[FLEXSC_MAX_ENTRY];
 };
 
+/* struct workqueue_struct *flexsc_syscalls; */
+
 void init_syspage(volatile struct flexsc_syspage *);
 void init_sysentry(volatile struct flexsc_sysentry *);
 void alloc_syspage(volatile struct flexsc_syspage *);
@@ -101,6 +104,9 @@ int flexsc_disable_hook(void);
 void flexsc_map_syspage(void);
 void flexsc_create_systhread_pool(void);
 void flexsc_clone_systhread(void);  
+void init_systhread(struct flexsc_init_info *info);
+
+
 
 void create_flexsc_systhread(void);
 
