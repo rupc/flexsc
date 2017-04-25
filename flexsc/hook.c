@@ -76,11 +76,11 @@ int flexsc_disable_hook()
 void flexsc_start_hook(pid_t hooked_pid) 
 {
     /* BUG_ON(hook_enable == 1); */
-    set_pid_bitmap(hooked_pid);
+    /* set_pid_bitmap(hooked_pid); */
 }
 
 void flexsc_end_hook(pid_t hooked_pid)
 {
     /* BUG_ON(hook_enable == 0); */
-    clear_pid_bitmap(hooked_pid);
+    /* clear_pid_bitmap(hooked_pid); */
 }

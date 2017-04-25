@@ -8,7 +8,6 @@
 #include <linux/slab.h>
 #include <linux/workqueue.h>
 
-#include <asm/syscall.h>
 
 #include <asm/cache.h>
 
