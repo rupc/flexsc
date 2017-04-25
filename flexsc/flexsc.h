@@ -3,11 +3,12 @@
 #include <linux/kernel.h>
 #include <linux/list.h>
 #include <linux/sched.h>
-#include <linux/bitops.h>
 #include <asm/uaccess.h>
 #include <linux/mman.h>
 #include <linux/slab.h>
 #include <linux/workqueue.h>
+
+#include <asm/syscall.h>
 
 #include <asm/cache.h>
 
@@ -109,27 +110,3 @@ void init_systhread(struct flexsc_init_info *info);
 
 
 void create_flexsc_systhread(void);
-
-
-#define bitmap_nr(h_pid) (h_pid % 64)
-#define bitmap_mem(h_pid) (h_pid / 64)
-
-#define BITMAP_ENTRIES 128
-
-static volatile long pid_bitmap[BITMAP_ENTRIES];
-
-/* Manipulating pid_bitmap */
-static inline void set_pid_bitmap(pid_t pid)
-{
-    set_bit(pid % BITMAP_ENTRY, &pid_bitmap[pid / BITMAP_ENTRIES]);
-}
-
-static inline void clear_pid_bitmap(pid_t pid)
-{
-    set_bit(pid % BITMAP_ENTRY, &pid_bitmap[pid / BITMAP_ENTRIES]);
-}
-
-static inline int test_pid_bitmap(pid_t pid) 
-{
-    return test_bit(pid % BITMAP_ENTRY, &pid_bitmap[pid / BITMAP_ENTRIES]);
-}
