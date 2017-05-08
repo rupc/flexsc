@@ -7,6 +7,7 @@
 #include <linux/mman.h>
 #include <linux/slab.h>
 #include <linux/workqueue.h>
+#include <linux/kthread.h>
 
 
 #include <asm/cache.h>
@@ -40,6 +41,7 @@
 
 #define FLEXSC_MAX_HOOKED 100
 
+#define SYSENTRY_NUM_DEFAULT 128
 
 /* 
  * Maximum Pid default by 32768 
