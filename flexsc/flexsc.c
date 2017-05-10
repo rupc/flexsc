@@ -59,7 +59,9 @@ sys_flexsc_register(struct flexsc_init_info __user *info)
 
     /* Allocate pointers for sysentry  */
     for (i = 0; i < SYSENTRY_NUM_DEFAULT; i++) {
-        systhread_pool[i] = (struct task_struct *)kmalloc(sizeof(struct task_struct *) * nentry, GFP_KERNEL);
+        systhread_pool[i] = (struct task_struct *)
+            kmalloc(sizeof(struct task_struct *) * nentry, GFP_KERNEL);
+
         if (!systhread_pool[i]) {
             printk(KERN_EMERG "Allocating systhread pool failed!\n");
             return -1;
@@ -131,35 +133,29 @@ EXPORT_SYMBOL_GPL(sys_flexsc_register);
 
 /**
  * @brief systhread checks given systentry's status and chooses what to do.
- *
  * @param args
- *
  * @return 
  */
 int systhread_fn(void *args)
 {
-
     struct flexsc_systhread_info *sysinfo = (struct flexsc_systhread_info *)args;
     struct flexsc_sysentry *entry = sysinfo->sysentry;
     struct work_struct *syswork = sysinfo->syswork;
 
-    unsigned short status = entry->rstatus;
-
     while (1) {
-        if (status == FLEXSC_STATUS_FREE || FLEXSC_STATUS_DONE) {
+        if (entry->rstatus == FLEXSC_STATUS_FREE || FLEXSC_STATUS_DONE) {
             // do nothing, go to sleep
             set_current_state(TASK_INTERRUPTIBLE);
             schedule();
         }
 
-        /* When waked up by flexsc_register() or outer functions */
-        if (status == FLEXSC_STATUS_SUBMITTED) {
-            struct flexsc_sysenry *wentry;
-
+        /* When waked up by flexsc_register() or other functions,
+         * It checks whether a request comes in.  */
+        if (entry->rstatus == FLEXSC_STATUS_SUBMITTED) {
             /**
              * Put a work into workqueue. 
-             * At this moment, rstatus is being FLEXSC_STATUS_BUSY * .
-             * workqueue handler of sysentry stores return value to sysret,
+             * At this moment, rstatus is being FLEXSC_STATUS_BUSY.
+             * Workqueue handler of sysentry stores return value to sysret,
              * and fills status flag with FLEXSC_STATUS_DONE
              */
             entry->rstatus = FLEXSC_STATUS_BUSY;
@@ -168,28 +164,62 @@ int systhread_fn(void *args)
 
             /**
              * Wait until a system call issued is done...
+             * If it completes, rstatus have FLEXSC_STATUS_DONE.
              */
-            while(entry->rstatus == FLEXSC_STATUS_BUSY) {
-            }
-
-            /* Fill return value to sysret field of sysentry */
-
-            /* Change request flag to DONE */
-            entry->rstatus = FLEXSC_STATUS_DONE;
+            while(entry->rstatus == FLEXSC_STATUS_BUSY) {}
         }
         
     }
-
-
     // 먼저 어떤 CPU에서 실행할지를 얻어내고,
     
     // 해당 CPU 번호를 구했으먼, queue_work_on(CPU#, flexsc_workqueue, flexsc_works[entry->엔트리에 대응하는 번호?]
     // 쿼드코어 환경에서는 3,*4*번 CPU에서 돌아간다고 가정. 유저 프로그램은 1, 2번 CPU
 }
-static void flexsc_work2_handler(struct work_struct *work)
+
+static void flexsc_work_handler(struct work_struct *work)
 {
-    // 여기서 실제로 시스템 콜을 수행하면 됨.
+    // Here is the spot where system calls are actually executed
     struct flexsc_sysentry *entry = work->work_entry;
+    /* nargs 가 필요가 없구나... */
+    /* unsigned nargs = entry->nargs; */
+    /* long ret; */
+
+    /* Get a sys_call_table */
+    /* const sys_call_ptr_t *flexsc_sysptr = sys_call_table; */
+    /* Locate first address of system call: sys_call_table[0], write */
+
+    /* FLEXSC_DO_SYSCALL(entry) macro seems more powerful. 
+     * It will be implemented soon.
+     * Before that, program correctness comes first.
+     * Fill return value to sysret field of sysentry */
+    long arg0 = entry->args[0];
+    long arg1 = entry->args[1];
+    long arg2 = entry->args[2];
+    long arg3 = entry->args[3];
+    long arg4 = entry->args[4];
+    long arg5 = entry->args[5];
+
+
+    const int sysnum = entry->sysnum;
+    entry->sysret = __syscall_XX(sysnum, arg0, arg1, arg2, arg3, arg4, arg5);
+    /* if (nargs == 0) {
+        ret = syscall0(sysnum);
+    } else if (nargs == 1) {
+        ret = syscall1(sysnum, entry->args[0]);
+    } else if (nargs == 2) {
+        ret = syscall2(sysnum, entry->args[0], entry->args[1]);
+    } else if (nargs == 3) {
+        ret = syscall3(sysnum, entry->args[0], entry->args[1], entry->args[2]);
+    } else if (nargs == 4) {
+        ret = syscall4(sysnum, entry->args[0], entry->args[1], entry->args[2], entry->args[3]);
+    } else if (nargs == 5) {
+        ret = syscall5(sysnum, entry->args[0], entry->args[1], entry->args[2], entry->args[3], entry->args[4]);
+    } else {
+        ret = syscall6(sysnum, entry->args[0], entry->args[1], entry->args[2], entry->args[3], entry->args[4], entry->args[5]);
+    } */
+
+    /* Change request flag to DONE */
+    entry->rstatus = FLEXSC_STATUS_DONE;
 }
 
 asmlinkage long sys_flexsc_wait(void) 

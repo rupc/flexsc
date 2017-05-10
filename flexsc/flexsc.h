@@ -8,7 +8,7 @@
 #include <linux/slab.h>
 #include <linux/workqueue.h>
 #include <linux/kthread.h>
-
+#include "flexsc-syscall.h"
 
 #include <asm/cache.h>
 
