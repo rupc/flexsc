@@ -48,8 +48,11 @@ sys_flexsc_register(struct flexsc_init_info __user *info)
     printk("%ld %ld %ld\n", info->npages, info->total_bytes, info->nentry);
     printk("Size of task_struct %lu\n", sizeof(struct task_struct *));
 
+    /* Print sys_call_table information  */
     syscall_table_size = sizeof(sys_ptr);
     sys_ptr = sys_call_table;
+    /* It should be match to the address in System.map */
+    printk("sys_call_table at %p, size: %u\n", sys_ptr, syscall_table_size);
 
     nentry = info->nentry; 
 
@@ -102,8 +105,6 @@ sys_flexsc_register(struct flexsc_init_info __user *info)
 
 
 
-    /* It should be match to the address in System.map */
-    printk("sys_call_table at %p, size: %u\n", sys_ptr, syscall_table_size);
 
     /* init_systhread(info); */
     /* flexsc_sysentry size should be same as cache line */
@@ -180,7 +181,7 @@ static void flexsc_work_handler(struct work_struct *work)
 {
     // Here is the spot where system calls are actually executed
     struct flexsc_sysentry *entry = work->work_entry;
-    /* nargs 가 필요가 없구나... */
+    /* It doesn't need nargs because it always allocates 6 args. */
     /* unsigned nargs = entry->nargs; */
     /* long ret; */
 
@@ -202,6 +203,8 @@ static void flexsc_work_handler(struct work_struct *work)
 
     const int sysnum = entry->sysnum;
     entry->sysret = __syscall_XX(sysnum, arg0, arg1, arg2, arg3, arg4, arg5);
+
+    /* looking stupid code... */
     /* if (nargs == 0) {
         ret = syscall0(sysnum);
     } else if (nargs == 1) {

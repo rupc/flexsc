@@ -29,8 +29,9 @@
 #define SYSCALL_FLEXSC_REGISTER 400
 #define SYSCALL_FLEXSC_WAIT 401
 #define SYSCALL_FLEXSC_HOOK 402
+#define SYSCALL_GETTID 186
 
-/* When initialize sysentry, each field is filld with zero which means *Free*  */
+/* When initializing a sysentry, each field is filld with zero */
 #define FLEXSC_STATUS_FREE 0 
 #define FLEXSC_STATUS_SUBMITTED 1
 #define FLEXSC_STATUS_DONE 2
@@ -58,7 +59,7 @@ struct flexsc_sysentry {
 
 struct flexsc_init_info {
     struct flexsc_sysentry *sysentry; /* Pointer to first sysentry */
-    struct flexsc_cpuinfo cpuinfo; 
+    struct flexsc_cpuinfo cpuinfo; /* cpu bound info */
     size_t npages; /* Number of Syspages */
     size_t nentry; /* # of workers should be equal to # of sysentries */
     size_t total_bytes;

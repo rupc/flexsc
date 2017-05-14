@@ -3,9 +3,33 @@
 #include <sys/types.h>
 /* #include "syscall_info.h" */
 #include "../libflexsc/flexsc.h"
+#include <pthread.h>
+
+#include <sys/stat.h>
+/* int stat(const char *file_name, struct stat *buf); */
+
+// This thread is responsible for checking sysentry for its status and return value
+pthread_t systhread;
+
+void *thread_main(void *arg)
+{
+
+	while (true)
+	{
+
+    }
+
+	pthread_exit((void *) 0);
+}
+
+void create_systhread(void) 
+{
+    pthread_create(&systhread, NULL, &thread_main, (void *)NULL);
+}
+
 
 /* This program contains system calls listed in table1, flexsc paper(OSDI 10),
- * Below is the system calls which I want to test
+ * Below is the system calls that will be tested
  *****************************************************************
  * stat
  * pread
@@ -15,13 +39,15 @@
  * write
  * mmap
  * munmap
- * pread
- * pwrite
  *
  ******************************************************************
 */
 
-__always_inline inline void
+long flexsc_syscall(int sysnum, long args[6]) {
+
+}
+
+inline void
 request_syscall_getpid(struct flexsc_sysentry *entry) 
 {
     entry->sysnum = __NR_getpid;
@@ -29,7 +55,7 @@ request_syscall_getpid(struct flexsc_sysentry *entry)
     entry->rstatus = FLEXSC_STATUS_SUBMITTED;
 }
 
-__always_inline inline void 
+inline void 
 request_syscall_write(struct flexsc_sysentry *entry, int fd, char *buf, size_t sz)
 {
     entry->sysnum = __NR_write;

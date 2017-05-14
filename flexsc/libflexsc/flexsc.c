@@ -124,12 +124,12 @@ flexsc_register(struct flexsc_init_info *info)
 
 void flexsc_wait(void) 
 {
-    syscall(401);
+    syscall(SYSCALL_FLEXSC_WAIT);
 }
 
 void flexsc_hook(void) 
 {
-    syscall(402, gettid());
+    syscall(SYSCALL_FLEXSC_HOOK, gettid());
 }
 
 /* glibc doesn't provide wrapper of gettid */
