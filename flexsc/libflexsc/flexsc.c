@@ -93,7 +93,6 @@ int init_info_default(struct flexsc_init_info *info)
 {
     /* Allocate syspage and map it to user space */
     init_map_syspage(info);
-
     /* Prevent syspage from swapping out */
     init_lock_syspage(info);
 
@@ -138,3 +137,17 @@ pid_t gettid(void)
     return syscall(186);
 }
 
+long flexsc_syscall(unsigned sysnum, unsigned n, long args[6], struct flexsc_cb *cb)
+{
+
+}
+
+struct flexsc_sysentry *free_syscall_entry(void)
+{
+    int i;
+    for (i = 0; i < SYSENTRY_NUM_DEFAULT; i++) {
+        if (gentry[i].rstatus == FLEXSC_STATUS_FREE) {
+            return &gentry[i];
+        }
+    }
+}

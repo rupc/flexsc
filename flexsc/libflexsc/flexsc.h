@@ -24,7 +24,6 @@
 #include <stdarg.h>
 #include <sched.h>
 #include "flexsc_cpu.h"
-#include "syscall_info.h"
 
 #define SYSCALL_FLEXSC_REGISTER 400
 #define SYSCALL_FLEXSC_WAIT 401
@@ -41,19 +40,26 @@
 #define FLEXSC_ERR_LOCKSYSPAGE 601
 #define FLEXSC_ERR_MAPSYSPAGE 602
 
+#define SYSENTRY_NUM_DEFAULT 128
 
 struct flexsc_cpuinfo {
     int user_cpu;
     int kernel_cpu;
 };
 
-void init_cpuinfo_default(struct flexsc_cpuinfo *cpuinfo);
+struct flexsc_cb {
+    void (*callback) (struct flexsc_cb *);
+    void *args;
+    int64_t ret;
+};
 
+
+// 48(8 * 6) + 16(4 * 4) = 64 bytes
 struct flexsc_sysentry {
     long args[6];
     unsigned nargs;
-    unsigned short rstatus;
-    unsigned short sysnum;
+    unsigned rstatus;
+    unsigned sysnum;
     unsigned sysret;
 } ____cacheline_aligned_in_smp;
 
@@ -65,16 +71,13 @@ struct flexsc_init_info {
     size_t total_bytes;
 };
 
-struct flexsc_cb {
-    void (*callback) (struct flexsc_cb *);
-    void *args;
-    int64_t ret;
-};
 
 struct flexsc_sysentry *flexsc_register(struct flexsc_init_info *info);
 void flexsc_wait(void);
 int init_info(struct flexsc_init_info *);
 
+/* global sysentry; it's used for free_syscall_entry() */
+struct flexsc_sysentry *gentry; 
 /* Find free sysentry and returns it */
 struct flexsc_sysentry *free_syscall_entry(void);
 
@@ -87,3 +90,6 @@ static void __flexsc_register(struct flexsc_init_info *info)
     syscall(400, info);
 }
 void print_sysentry(struct flexsc_sysentry *entry);
+
+long flexsc_syscall(unsigned sysnum, unsigned n, long args[6], struct flexsc_cb *cb);
+void init_cpuinfo_default(struct flexsc_cpuinfo *cpuinfo);

@@ -47,33 +47,31 @@ long flexsc_syscall(int sysnum, long args[6]) {
 
 }
 
-inline void
-request_syscall_getpid(struct flexsc_sysentry *entry) 
-{
-    entry->sysnum = __NR_getpid;
-    entry->nargs = 0;
-    entry->rstatus = FLEXSC_STATUS_SUBMITTED;
-}
-
-inline void 
-request_syscall_write(struct flexsc_sysentry *entry, int fd, char *buf, size_t sz)
-{
-    entry->sysnum = __NR_write;
-    entry->nargs = __ARGS_write;
-    entry->rstatus = FLEXSC_STATUS_SUBMITTED;
-    entry->args[0] = (long)fd;
-    entry->args[1] = (long)buf;
-    entry->args[2] = (long)sz;
-}
-
-/* int flexsc_getpid(struct flexsc_cb *cb, ...)
+struct flexsc_sysentry* flexsc_getpid()
 {
     struct flexsc_sysentry *entry;
     entry = free_syscall_entry();
     request_syscall_getpid(entry);
-} */
+    return entry;
+}
 
 void flexsc_write();
+void flexsc_test()
+{
+    pid_t pid;
+    struct flexsc_sysentry *entry;
+    while (1) {
+        entry = flexsc_getpid();
+
+        while (entry->rstatus != FLEXSC_STATUS_DONE) {}
+        /* Consumes return value */
+
+        long ret = entry->sysret;
+        entry->rstatus = FLEXSC_STATUS_FREE;
+        printf("%ld\n", pid);
+        sleep(1);
+    }
+}
 
 int main(int argc, const char *argv[])
 {
