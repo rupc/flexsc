@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 /* #include "syscall_info.h" */
-#include "../libflexsc/flexsc.h"
+#include "../libflexsc/flexsc_syscalls.h"
 #include <pthread.h>
 
 #include <sys/stat.h>
@@ -13,8 +13,7 @@ pthread_t systhread;
 
 void *thread_main(void *arg)
 {
-
-	while (true)
+	while (1)
 	{
 
     }
@@ -43,74 +42,49 @@ void create_systhread(void)
  ******************************************************************
 */
 
-long flexsc_syscall(int sysnum, long args[6]) {
-
-}
-
-struct flexsc_sysentry* flexsc_getpid()
-{
-    struct flexsc_sysentry *entry;
-    entry = free_syscall_entry();
-    request_syscall_getpid(entry);
-    return entry;
-}
-
-void flexsc_write();
-void flexsc_test()
-{
-    pid_t pid;
-    struct flexsc_sysentry *entry;
-    while (1) {
-        entry = flexsc_getpid();
-
-        while (entry->rstatus != FLEXSC_STATUS_DONE) {}
-        /* Consumes return value */
-
-        long ret = entry->sysret;
-        entry->rstatus = FLEXSC_STATUS_FREE;
-        printf("%ld\n", pid);
-        sleep(1);
-    }
-}
-
 int main(int argc, const char *argv[])
 {
     struct flexsc_sysentry *fentry;
+    struct flexsc_sysentry *receiver;
     struct flexsc_init_info info;
-    int i;
-    int num_entry;
-
+    int i, num_entry, cnt = 0;
+    pid_t mypid;
+    
+    /*
+     * You may ask "where the info struct is initialized?"
+     * For ease of testing, it has default setting 
+     */
     fentry = flexsc_register(&info);
+
     num_entry = info.nentry;
+    printf("Number of entry: %d\n", num_entry);
 
+    /* Print global entry whether it is set expected */
+    print_sysentry(gentry);
 
-    request_syscall_getpid(&fentry[0]);
-    char buf[20] = "hello";
-    size_t sz = 20;
-    request_syscall_write(&fentry[1], 1, buf, sz);
-
-    printf("%d\n", fentry[0].sysnum);
-    printf("num entry: %d\n", num_entry);
+    /* Print info of created sysentries */
     for (i = 0; i < num_entry; i++) {
         print_sysentry(&fentry[i]);
     }
 
-    /* fentry = free_syscall_entry();
+    /* Call getpid() - flexsc version */
+    receiver = flexsc_getpid();
 
-    request_syscall_getpid(fentry);
-
-    while (fentry->rstatus != FLEXSC_STATUS_DONE) {
-        do_something_else();
+    /* Do something until issued system call is done */
+    while (receiver->rstatus != FLEXSC_STATUS_DONE) {
+        sleep(1);
+        printf("count: %d\n", cnt++);
     }
 
-    flexsc_wait(); */
+    /* Consumes return value */
+    mypid = receiver->sysret;
+    receiver->rstatus = FLEXSC_STATUS_FREE;
 
+    /* Usage of sysret */
+    printf("PID: %d\n", mypid);
+
+    /* Wait until it gets SIGTERM */
+    while (1) {}
 
     return 0;
 }
-    /* printf("hello!\n"); */
-    /* pid_t pid = syscall(__NR_getpid);
-
-    printf("%d\n", pid);
-
-    printf("sizeof sysentry: %lu\n", sizeof(first_entry)); */

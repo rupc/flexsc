@@ -114,11 +114,14 @@ int init_info(struct flexsc_init_info *info)
 struct flexsc_sysentry *
 flexsc_register(struct flexsc_init_info *info)
 {
+    /* Currently default setting used for correctness */
     init_info(info);
 
     __flexsc_register(info);
-    return info->sysentry;
 
+    /* Set global sysentry to registered entry */
+    gentry = info->sysentry;
+    return info->sysentry;
 }
 
 void flexsc_wait(void) 

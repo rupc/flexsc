@@ -150,7 +150,6 @@ int systhread_fn(void *args)
     struct flexsc_systhread_info *sysinfo = (struct flexsc_systhread_info *)args;
     struct flexsc_sysentry *entry = sysinfo->sysentry;
     struct work_struct *syswork = sysinfo->syswork;
-
     while (1) {
         /* If it has nothing to do, go to sleep */
         /* if (entry->rstatus == FLEXSC_STATUS_FREE 
