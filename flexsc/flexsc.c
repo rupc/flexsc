@@ -40,6 +40,7 @@ sys_flexsc_register(struct flexsc_init_info __user *info)
     char systhread_name[SYSTHREAD_NAME_MAX];
     struct flexsc_sysentry *sysentry = info->sysentry;
     int i;
+    pid_t user_pid;
 
     /* need_to_create_worker(pool); */
     /* printk("Here is in kernel I want to exploit info struct from user to generate worker thread....\n"); */
@@ -80,7 +81,7 @@ sys_flexsc_register(struct flexsc_init_info __user *info)
     /* Create workqueue that systhread can put a work */
     flexsc_workqueue = create_workqueue("flexsc-workqueue");
 
-    printk("Allocating work_struct(#%d)\n", nentry);
+    printk("Allocating work_struct(#%ld)\n", nentry);
     /* 워크 스트럭를 엔트리 갯수만큼 할당 받기 */
     flexsc_works = (struct work_struct *)kmalloc(sizeof(struct work_struct) * nentry, GFP_KERNEL);
 
@@ -241,10 +242,11 @@ static void flexsc_work_handler(struct work_struct *work)
     entry->rstatus = FLEXSC_STATUS_DONE;
 }
 
+/* Make calling thread(mostly user thread) sleep */
 asmlinkage long sys_flexsc_wait(void) 
 {
     /* static struct task_struct *systhread_pool[SYSENTRY_NUM_DEFAULT]; */
-    int i;
+    /* int i; */
     printk("Waking up sleeping systhread...");
 
     /* user thread goes to sleep */

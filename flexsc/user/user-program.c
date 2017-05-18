@@ -59,7 +59,7 @@ int main(int argc, const char *argv[])
     num_entry = info.nentry;
     printf("Number of entry: %d\n", num_entry);
 
-    /* Print global entry whether it is set expected */
+    /* Print global entry whether it is set as expected */
     print_sysentry(gentry);
 
     /* Print info of created sysentries */
@@ -78,6 +78,8 @@ int main(int argc, const char *argv[])
 
     /* Consumes return value */
     mypid = receiver->sysret;
+
+    /* Change a entry to FREE */
     receiver->rstatus = FLEXSC_STATUS_FREE;
 
     /* Usage of sysret */
