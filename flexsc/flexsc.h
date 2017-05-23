@@ -69,8 +69,8 @@ struct flexsc_cpuinfo {
 struct flexsc_sysentry {
     long args[6];
     unsigned nargs;
-    unsigned short rstatus;
-    unsigned short sysnum;
+    unsigned rstatus;
+    unsigned sysnum;
     unsigned sysret;
 } ____cacheline_aligned_in_smp;
 
