@@ -12,6 +12,11 @@
 
 #include <asm/cache.h>
 
+#define SYSTHREAD_NUM_MAX 1024
+#define SYSTHREAD_NAME_MAX 20
+
+#define DEFAULT_CPU 4
+
 #define FLEXSC_ERR_INIT_TGROUP_EMPTY 500
 #define FLEXSC_ERR_INIT_COPY 501
 #define FLEXSC_ERR_CACHE_LINE_MISMATCH 502
@@ -41,7 +46,7 @@
 
 #define FLEXSC_MAX_HOOKED 100
 
-#define SYSENTRY_NUM_DEFAULT 128
+#define SYSENTRY_NUM_DEFAULT 8
 
 /* 
  * Maximum Pid default by 32768 
@@ -111,3 +116,8 @@ void init_systhread(struct flexsc_init_info *info);
 
 
 void create_flexsc_systhread(void);
+
+void flexsc_create_workqueue(char *name, struct workqueue_struct *flexsc_workqueue);
+void alloc_systhreads(struct task_struct *systhread_pool[], int nentry);
+void alloc_workstruct(struct work_struct *flexsc_works, struct flexsc_init_info *info);
+void spawn_systhreads(struct task_struct *systhread_pool[], struct flexsc_init_info *info);
