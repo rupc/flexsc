@@ -15,7 +15,7 @@
 #define SYSTHREAD_NUM_MAX 1024
 #define SYSTHREAD_NAME_MAX 20
 
-#define DEFAULT_CPU 4
+#define DEFAULT_CPU 6
 
 #define FLEXSC_ERR_INIT_TGROUP_EMPTY 500
 #define FLEXSC_ERR_INIT_COPY 501
@@ -46,7 +46,7 @@
 
 #define FLEXSC_MAX_HOOKED 100
 
-#define SYSENTRY_NUM_DEFAULT 8
+#define SYSENTRY_NUM_DEFAULT 64
 
 /* 
  * Maximum Pid default by 32768 

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define SYSPAGE_PER_TASK 2
+#define SYSPAGE_PER_TASK 1
 
 
 /**
@@ -114,7 +114,7 @@ void print_init_info(struct flexsc_init_info *info)
 {
     printf("flexsc_init_info\n");
     printf("number of sysentry: %ld\n", sizeof(info->sysentry) / sizeof(info->sysentry[0]));
-    printf("user cpu:%d, kernel cpu:%d\n", (info->cpuinfo).user_cpu, (info->cpuinfo).kernel_cpu);
+    printf("user cpu:%x, kernel cpu:%x\n", (info->cpuinfo).user_cpu, (info->cpuinfo).kernel_cpu);
     printf("npage: %ld\n", info->npages);
     printf("nentry: %ld\n", info->nentry);
     printf("total_bytes: %ld\n", info->total_bytes);
@@ -126,7 +126,7 @@ flexsc_register(struct flexsc_init_info *info)
     /* Currently default setting is used for correctness */
     init_info(info);
     print_init_info(info);
-    __flexsc_register(info);
+    /* __flexsc_register(info); */
 
     /* Set global sysentry to registered entry */
     gentry = info->sysentry;

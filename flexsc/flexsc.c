@@ -53,8 +53,8 @@ sys_flexsc_register(struct flexsc_init_info __user *info)
 
     alloc_systhreads(systhread_pool, SYSENTRY_NUM_DEFAULT);
     flexsc_create_workqueue("flexsc_workqueue", flexsc_workqueue);
-    alloc_workstruct(flexsc_works, info);
-    spawn_systhreads(systhread_pool, info);
+    /* alloc_workstruct(flexsc_works, info);
+    spawn_systhreads(systhread_pool, info); */
 
 
     /* init_systhread(info); */

@@ -67,38 +67,44 @@ int main(int argc, const char *argv[])
      * For ease of testing, it has default setting 
      */
     fentry = flexsc_register(&info);
+    printf("After registering flexsc\n");
 
-    num_entry = info.nentry;
+    /* num_entry = info.nentry;
     printf("Number of entry: %d\n", num_entry);
 
-    /* Print global entry whether it is set as expected */
+    [>Print global entry whether it is set as expected<]
     print_sysentry(gentry);
 
-    /* Print info of created sysentries */
+    [>Print info of created sysentries<]
     for (i = 0; i < num_entry; i++) {
         print_sysentry(&fentry[i]);
     }
 
-    /* Call getpid() - flexsc version */
+    [>Call getpid() - flexsc version<]
     receiver = flexsc_getpid();
 
-    /* Do something until issued system call is done */
+    [>Do something until issued system call is done<]
     while (receiver->rstatus != FLEXSC_STATUS_DONE) {
         sleep(1);
         printf("count: %d\n", cnt++);
     }
 
-    /* Consumes return value */
+    [>Consumes return value<]
     mypid = receiver->sysret;
 
-    /* Change a entry to FREE */
+    [>Change a entry to FREE<]
     receiver->rstatus = FLEXSC_STATUS_FREE;
 
-    /* Usage of sysret */
-    printf("PID: %d\n", mypid);
+    [>Usage of sysret<]
+    printf("PID: %d\n", mypid); */
 
     /* Wait until it gets SIGTERM */
     while (1) {}
 
     return 0;
+}
+
+void test_register() 
+{
+
 }
