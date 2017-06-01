@@ -7,7 +7,17 @@
 
 #include <sys/stat.h>
 /* int stat(const char *file_name, struct stat *buf); */
+#include <signal.h>
 
+void sig_handler(int signo)
+{
+    printf("flexsc user program is going die SIGINT(%d)\n", SIGINT);
+    /**
+     * flexsc_exit terminates systhreads,
+     * deallocates sysentry array */
+    flexsc_exit();
+    exit(EXIT_SUCCESS);
+}
 // This thread is responsible for checking sysentry for its status and return value
 pthread_t systhread;
 
@@ -49,6 +59,8 @@ int main(int argc, const char *argv[])
     struct flexsc_init_info info;
     int i, num_entry, cnt = 0;
     pid_t mypid;
+
+    signal(SIGINT, (void *)sig_handler);
     
     /*
      * You may ask "where the info struct is initialized?"

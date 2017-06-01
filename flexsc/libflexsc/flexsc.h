@@ -42,6 +42,8 @@ void flexsc_hook(void);
 
 pid_t gettid(void);
 
+void flexsc_exit();
+
 static void __flexsc_register(struct flexsc_init_info *info) 
 {
     syscall(400, info);

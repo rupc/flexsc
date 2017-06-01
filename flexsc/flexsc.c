@@ -27,6 +27,13 @@ struct flexsc_systhread_info {
 };
 
 asmlinkage long 
+sys_flexsc_exit()
+{
+
+    return 0;
+}
+
+asmlinkage long 
 sys_flexsc_register(struct flexsc_init_info __user *info)
 {
     struct task_struct *task;

@@ -5,6 +5,8 @@
 #define SYSCALL_FLEXSC_REGISTER 400
 #define SYSCALL_FLEXSC_WAIT 401
 #define SYSCALL_FLEXSC_HOOK 402
+#define SYSCALL_FLEXSC_EXIT 403
+
 #define SYSCALL_GETTID 186
 
 /* When initializing a sysentry, each field is filld with zero */

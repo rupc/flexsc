@@ -336,6 +336,7 @@
 400 common flexsc_register sys_flexsc_register
 401 common flexsc_wait sys_flexsc_wait
 402 common flexsc_start_hook sys_flexsc_start_hook
+403 common flexsc_exit sys_flexsc_exit
 
 #
 # x32-specific system call numbers start at 512 to avoid cache impact
