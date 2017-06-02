@@ -126,12 +126,14 @@ flexsc_register(struct flexsc_init_info *info)
     /* Currently default setting is used for correctness */
     init_info(info);
     print_init_info(info);
-    /* __flexsc_register(info); */
+    __flexsc_register(info);
+    /* flexsc_hook(); */
 
     /* Set global sysentry to registered entry */
     gentry = info->sysentry;
     return info->sysentry;
 }
+
 
 void flexsc_exit()
 {

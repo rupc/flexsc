@@ -96,6 +96,15 @@ struct flexsc_syspage {
     struct flexsc_sysentry *entries[FLEXSC_MAX_ENTRY];
 };
 
+/**
+ * @brief Argument to systhread 
+ */
+struct flexsc_systhread_info {
+    struct flexsc_sysentry *sysentry;
+    struct work_struct *syswork;
+    char name[SYSTHREAD_NAME_MAX];
+};
+
 /* struct workqueue_struct *flexsc_syscalls; */
 
 void init_syspage(volatile struct flexsc_syspage *);
@@ -118,6 +127,12 @@ void init_systhread(struct flexsc_init_info *info);
 void create_flexsc_systhread(void);
 
 void flexsc_create_workqueue(char *name, struct workqueue_struct *flexsc_workqueue);
+void flexsc_destroy_workqueue(struct workqueue_struct *flexsc_workqueue);
+void flexsc_free_works(struct work_struct *flexsc_works);
+void flexsc_stop_systhreads(struct task_struct *systhread_pool[]);
+
+void flexsc_free_sysinfo(struct flexsc_systhread_info *_sysinfo[]);
+
 void alloc_systhreads(struct task_struct *systhread_pool[], int nentry);
 void alloc_workstruct(struct work_struct *flexsc_works, struct flexsc_init_info *info);
 void spawn_systhreads(struct task_struct *systhread_pool[], struct flexsc_init_info *info);

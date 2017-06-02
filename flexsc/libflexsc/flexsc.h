@@ -23,6 +23,7 @@
 #include <sys/mman.h>
 #include <stdarg.h>
 #include <sched.h>
+#include <stdio.h>
 
 #include "flexsc_cpu.h"
 #include "flexsc_types.h"
@@ -46,8 +47,10 @@ void flexsc_exit();
 
 static void __flexsc_register(struct flexsc_init_info *info) 
 {
-    syscall(400, info);
+    printf("%s\n", __func__);
+    syscall(SYSCALL_FLEXSC_REGISTER, info); 
 }
+
 void print_sysentry(struct flexsc_sysentry *entry);
 
 long flexsc_syscall(unsigned sysnum, unsigned n, long args[6], struct flexsc_cb *cb);

@@ -1,81 +1,138 @@
 #include "flexsc.h"
 #include <asm/syscall.h>
+#include <linux/delay.h>
 
 pid_t hooked_task[FLEXSC_MAX_HOOKED];
 const sys_call_ptr_t *sys_ptr;
 
-static struct task_struct *systhread_pool[SYSENTRY_NUM_DEFAULT];
+static struct task_struct *systhread_pool[SYSENTRY_NUM_DEFAULT] = {NULL,};
+/* Declaration of workqueue */
+static struct workqueue_struct *flexsc_workqueue = NULL;
+static struct work_struct *flexsc_works = NULL;
 
-int systhread_fn(void *args);
+static int systhread_fn(void *args);
 static void flexsc_work_handler(struct work_struct *work);
 
-/* Declaration of workqueue */
-static struct workqueue_struct *flexsc_workqueue;
-static struct work_struct *flexsc_works;
-
-int systhread_on_cpu[2] = {3, 4};
-
+struct flexsc_systhread_info *_sysinfo[SYSENTRY_NUM_DEFAULT] = {NULL,};
+int systhread_on_cpu[2] = {5, 6};
 struct task_struct *user_task;
+char workqueue_name[64] = "flexsc_workqueue\0";
+size_t nentry; /* Reserved for devel mode */
 
-/**
- * @brief Argument to systhread 
- */
-struct flexsc_systhread_info {
-    struct flexsc_sysentry *sysentry;
-    struct work_struct *syswork;
-    char name[SYSTHREAD_NAME_MAX];
-};
-
-asmlinkage long 
-sys_flexsc_exit()
+int thread_main(void *arg)
 {
+    /* printk("Hello kernel_thread via system call\n"); */
+    return 0;
+}
+
+pid_t kernel_creation_test(void) 
+{
+    const unsigned long flags = CLONE_VM | CLONE_FS | CLONE_FILES;
+    pid_t pid;
+    int cpu = 5;
+    void *arg = (void *)(long)cpu;
+    printk("smp_processor_id(): %d\n", smp_processor_id());
+
+    pid = kernel_thread(thread_main, arg, flags);
+
+    if (pid < 0) {
+        printk("Error when create kernel_thread\n");
+    }
+
+    printk("pid: %d\n", pid);
+    return pid;
+}
+
+
+static int thread_fn(void *unused)
+{
+    int cnt = 0;
+    while (1)
+    {
+        printk(KERN_INFO "Thread Running:%d\n", cnt++);
+        ssleep(5);
+    }
+    printk(KERN_INFO "Thread Stopping\n");
+    do_exit(0);
+    return 0;
+}
+
+static struct task_struct *thread_st;
+int kthread_test(void) 
+{
+    /* thread_st = kthread_run(thread_fn, NULL, "mythread"); */
+    /* thread_st = kthread_create(kthread_worker_fn, NULL, "mythread"); */
+    thread_st = kthread_create(thread_fn, NULL, "mythread");
+    kthread_bind(thread_st, DEFAULT_CPU); 
+    wake_up_process(thread_st);
+
+    if (thread_st) {
+        printk(KERN_INFO "Thread created successfully\n");
+    } else {
+        printk(KERN_ERR "Thread creation failed\n");
+    }
+    return 0;
+}
+
+struct syswork_struct {
+
+};
+#define MAX_THREADS 64
+static struct task_struct *syspool[MAX_THREADS];
+int kthread_multiple_test(void) 
+{
+    int i;
+    char name[32];
+
+    for (i = 0; i < MAX_THREADS; i++) {
+        snprintf(name, sizeof(name), "systhread[%d]", i);
+        syspool[i] = kthread_create(thread_fn, NULL, name);
+
+        if (syspool[i]) {
+            printk(KERN_INFO "Thread[%d] created successfully\n", i);
+        } else {
+            printk(KERN_ERR "Thread[%d] creation failed\n", i);
+            break;
+        }
+
+        kthread_bind(syspool[i], DEFAULT_CPU); 
+        wake_up_process(syspool[i]);
+    }
 
     return 0;
+}
+
+int kthread_worker_fn_test(void)
+{
+    thread_st = kthread_create(kthread_worker_fn, NULL, "kthread_worker");
+
 }
 
 asmlinkage long 
 sys_flexsc_register(struct flexsc_init_info __user *info)
 {
+    /* kthread_test(); */
+    /* kernel_creation_test(); */
     struct task_struct *task;
     /* struct flexsc_sysentry *sysentry = info->sysentry; */
-    size_t nentry; /* Reserved for devel mode */
     pid_t user_pid;
 
     nentry = info->nentry; 
     user_pid = current->pid;
     task = current;
 
-    printk("Process(%d) on FlexSC\n", user_pid);
-
-    if (nentry != SYSENTRY_NUM_DEFAULT) {
-        printk("# of entry should be equal to %d in development mode\n", SYSENTRY_NUM_DEFAULT);
-    }
+    printk("flexsc: smp_processor_id(): %d\n", smp_processor_id());
+    printk("flexsc: process(%d) calls flexsc\n", user_pid);
+    printk("flexsc: nentry: %ld\n", nentry);
 
     alloc_systhreads(systhread_pool, SYSENTRY_NUM_DEFAULT);
-    flexsc_create_workqueue("flexsc_workqueue", flexsc_workqueue);
-    /* alloc_workstruct(flexsc_works, info);
-    spawn_systhreads(systhread_pool, info); */
+    flexsc_create_workqueue(workqueue_name, flexsc_workqueue);
+    alloc_workstruct(flexsc_works, info);
 
-
-    /* init_systhread(info); */
-    /* flexsc_sysentry size should be same as cache line */
-    /* WARN_ON(sizeof(struct flexsc_sysentry) == FLEXSC_CACHE_LINE_SZIE); */
-
-    if (sizeof(struct flexsc_sysentry) != FLEXSC_CACHE_LINE_SZIE) {
-        /* printk(KERN_EMERG "Mismatch for cache line size
-                and sysentry\n"); */
-        return FLEXSC_ERR_CACHE_LINE_MISMATCH;
-    }
     
+    kthread_multiple_test();
 
-    /* Address size should be same as long */
-    /* WARN_ON(sizeof(void *) == sizeof(long)); */
-    
-
-
-    task->flexsc_enabled = 1;
-
-    /* flexsc_start_hook(task->pid); */
+    /* spawn_systhreads(systhread_pool, info); */
 
     return 0;
 }
@@ -121,9 +178,69 @@ void alloc_workstruct(struct work_struct *flexsc_works, struct flexsc_init_info 
 
 void flexsc_create_workqueue(char *name, struct workqueue_struct *flexsc_workqueue) 
 {
-    printk("Creating FlexSC workqueue...\n");
+    printk("Creating flexsc workqueue...\n");
     /* Create workqueue so that systhread can put a work */
     flexsc_workqueue = create_workqueue(name);
+    printk("Address of flexsc_workqueue: %p\n", flexsc_workqueue);
+}
+
+asmlinkage long sys_flexsc_exit(void)
+{
+    printk("%s\n", __func__);
+    flexsc_destroy_workqueue(flexsc_workqueue);
+    flexsc_free_works(flexsc_works);
+    flexsc_stop_systhreads(systhread_pool);
+    /* flexsc_free_sysinfo(_sysinfo); */
+    return 0;
+}
+
+
+void flexsc_destroy_workqueue(struct workqueue_struct *flexsc_workqueue)
+{
+    if (flexsc_workqueue == NULL) {
+        printk("flexsc workqueue is empty!\n");
+        return;
+    }
+
+    printk("Destroying flexsc workqueue...\n");
+    destroy_workqueue(flexsc_workqueue);
+}
+
+void flexsc_free_works(struct work_struct *flexsc_works)
+{
+    if (flexsc_works == NULL) {
+        printk("flexsc works is empty!\n");
+        return;
+    }
+
+    printk("Deallocating flexsc work structs...\n");
+    kfree(flexsc_works);
+}
+
+void flexsc_stop_systhreads(struct task_struct *syspool[])
+{
+    int i;
+
+    for (i = 0; i < MAX_THREADS; i++) {
+        if (syspool[i] == NULL) {
+            continue;
+        }
+        printk(KERN_EMERG "Terminate systhread[%d]\n", i);
+        kthread_stop(syspool[i]);
+    }
+}
+
+void flexsc_free_sysinfo(struct flexsc_systhread_info *_sysinfo[])
+{
+    if (_sysinfo == NULL) {
+        printk("_sysinfo is empty!\n");
+        return;
+    }
+
+    while (*_sysinfo) {
+        kfree(*_sysinfo);
+        (*_sysinfo)++;
+    }
 }
 
 /**
@@ -132,33 +249,38 @@ void flexsc_create_workqueue(char *name, struct workqueue_struct *flexsc_workque
  * Workqueue has its own dedicated kernel thread. This in-kernel single thread does system call.
  * And then, sysentry's sysret has a return value.
  */
+static struct task_struct *__syspool[8] = {NULL, };
+
 void spawn_systhreads(struct task_struct *systhread_pool[], struct flexsc_init_info *info)
 {
     struct flexsc_sysentry *sysentry = info->sysentry;
     int nentry = info->nentry, i;
-    int sz = SYSENTRY_NUM_DEFAULT; // 8 systhreads
-    char systhread_name[SYSTHREAD_NAME_MAX];
+    int sz = SYSENTRY_NUM_DEFAULT; 
+    char systhread_name[128];
 
-    WARN_ON(sz >= nentry);
+    /* WARN_ON(sz >= nentry); */
 
-    printk("Spawnning systhread...\n");
-    for (i = 0; i < nentry; i++) {
-        struct flexsc_systhread_info sysinfo = {
-            .sysentry = &sysentry[i],
-            .syswork = &flexsc_works[i]
-        };
+    printk("flexsc: Spawnning systhread...\n");
+    for (i = 0; i < 8; i++) {
+
+        _sysinfo[i] = (struct flexsc_systhread_info *)
+            kmalloc(sizeof(struct flexsc_systhread_info), GFP_KERNEL);
+
+        _sysinfo[i]->sysentry = &sysentry[i];
+        _sysinfo[i]->syswork = &flexsc_works[i];
 
         snprintf(systhread_name, sizeof(systhread_name), "systhread[%d]", i);
-        strcpy(sysinfo.name, systhread_name);
+        strcpy(_sysinfo[i]->name, systhread_name);
 
         /* systhread_pool[i] =
             kthread_create_on_cpu(systhread_fn, (void *)(&sysinfo),
                     systhread_on_cpu[i % 2], systhread_name); */
-        systhread_pool[i] = kthread_create(systhread_fn, (void *)(&sysinfo), systhread_name);
-        
+        snprintf(systhread_name, sizeof(systhread_name), "systhread[%d]", i);
+        __syspool[i] = kthread_create(systhread_fn, (void *)(NULL), systhread_name);
+
         /* All systhread bound to DEFAULT_CPU(CPU 4) */
-        kthread_bind(systhread_pool[i], DEFAULT_CPU); 
-        wake_up_process(systhread_pool[i]);
+        kthread_bind(__syspool[i], DEFAULT_CPU); 
+        wake_up_process(__syspool[i]);
     }
 
 }
@@ -168,13 +290,16 @@ void spawn_systhreads(struct task_struct *systhread_pool[], struct flexsc_init_i
  * @param args
  * @return 
  */
-int systhread_fn(void *args)
+static int systhread_fn(void *args)
 {
     struct flexsc_systhread_info *sysinfo = (struct flexsc_systhread_info *)args;
     struct flexsc_sysentry *entry = sysinfo->sysentry;
     struct work_struct *syswork = sysinfo->syswork;
     printk("INFO: %s created\n", sysinfo->name);
+    int cnt = 0;
     while (1) {
+        ssleep(3);
+        printk("systhread count: %d\n", cnt++);
         /* If it has nothing to do, go to sleep */
         /* if (entry->rstatus == FLEXSC_STATUS_FREE 
              * || entry->rstatus ==FLEXSC_STATUS_DONE) {
@@ -249,9 +374,11 @@ asmlinkage long sys_flexsc_wait(void)
 {
     /* static struct task_struct *systhread_pool[SYSENTRY_NUM_DEFAULT]; */
     /* int i; */
-    printk("Waking up sleeping systhread...");
+    /* printk("Waking up sleeping systhread..."); */
+    printk("%d is going to sleep\n", current->pid);
 
     /* user thread goes to sleep */
+
     set_current_state(TASK_INTERRUPTIBLE);
     schedule();
 
