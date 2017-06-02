@@ -7,7 +7,7 @@ const sys_call_ptr_t *sys_ptr;
 
 static struct task_struct *systhread_pool[SYSENTRY_NUM_DEFAULT] = {NULL,};
 /* Declaration of workqueue */
-static struct workqueue_struct *flexsc_workqueue = NULL;
+static struct workqueue_struct *flexsc_workqueue;
 static struct work_struct *flexsc_works = NULL;
 
 static int systhread_fn(void *args);
@@ -16,7 +16,6 @@ static void flexsc_work_handler(struct work_struct *work);
 struct flexsc_systhread_info *_sysinfo[SYSENTRY_NUM_DEFAULT] = {NULL,};
 int systhread_on_cpu[2] = {5, 6};
 struct task_struct *user_task;
-char workqueue_name[64] = "flexsc_workqueue\0";
 size_t nentry; /* Reserved for devel mode */
 
 int thread_main(void *arg)
@@ -74,32 +73,76 @@ int kthread_test(void)
     return 0;
 }
 
-struct syswork_struct {
+static void syswork_handler(struct work_struct *work)
+{
+    printk("flexsc: in syswork handler\n");
+}
 
-};
+static int systhread_main(void *arg)
+{
+    int cnt = 0;
+    
+    // This entry pointer exactly points to an entry with having right offset
+    struct work_struct flexsc_work;
+    struct flexsc_sysentry *entry = (struct flexsc_sysentry *)(arg);
+    FLEXSC_INIT_WORK(&flexsc_work, syswork_handler, entry);
+
+    // 현재 entry 포인터를 참조하려고 하면 에러가 발생한다는 것을 발견함.
+
+    while (1)
+    {
+        /* printk(KERN_INFO "Thread Running:%d\n", cnt++); */
+        printk(KERN_INFO "Thread Running:%d, entry->rstatus:%d\n", cnt++, entry->rstatus);
+
+        /* while (entry->rstatus == FLEXSC_STATUS_FREE ||  */
+               /* entry->rstatus == FLEXSC_STATUS_DONE) { */
+            ssleep(5);
+        /* } */
+
+        /* if (entry->rstatus == FLEXSC_STATUS_SUBMITTED) {
+            entry->rstatus = FLEXSC_STATUS_BUSY;
+            barrier();
+            queue_work_on(DEFAULT_CPU, flexsc_workqueue, &flexsc_work);
+        } */
+    }
+    printk(KERN_INFO "Thread Stopping\n");
+    do_exit(0);
+    return 0;
+}
+
 #define MAX_THREADS 64
 static struct task_struct *syspool[MAX_THREADS];
-int kthread_multiple_test(void) 
+int kthread_multiple_test(struct flexsc_init_info *info) 
 {
     int i;
     char name[32];
 
+    flexsc_workqueue = create_workqueue("flexsc_workqueue");
+
     for (i = 0; i < MAX_THREADS; i++) {
         snprintf(name, sizeof(name), "systhread[%d]", i);
-        syspool[i] = kthread_create(thread_fn, NULL, name);
+        syspool[i] = kthread_create(systhread_main, &(info->sysentry[i]), name);
 
-        if (syspool[i]) {
-            printk(KERN_INFO "Thread[%d] created successfully\n", i);
-        } else {
+        if (!syspool[i]) {
             printk(KERN_ERR "Thread[%d] creation failed\n", i);
             break;
         }
+        
+
+        printk(KERN_INFO "Thread[%d] created successfully\n", i);
 
         kthread_bind(syspool[i], DEFAULT_CPU); 
         wake_up_process(syspool[i]);
     }
 
     return 0;
+}
+void flexsc_create_workqueue(char *name, struct workqueue_struct *flexsc_workqueue) 
+{
+    printk("Creating flexsc workqueue...\n");
+    /* Create workqueue so that systhread can put a work */
+    flexsc_workqueue = create_workqueue(name);
+    printk("Address of flexsc_workqueue: %p\n", flexsc_workqueue);
 }
 
 int kthread_worker_fn_test(void)
@@ -126,11 +169,10 @@ sys_flexsc_register(struct flexsc_init_info __user *info)
     printk("flexsc: nentry: %ld\n", nentry);
 
     alloc_systhreads(systhread_pool, SYSENTRY_NUM_DEFAULT);
-    flexsc_create_workqueue(workqueue_name, flexsc_workqueue);
     alloc_workstruct(flexsc_works, info);
 
     
-    kthread_multiple_test();
+    kthread_multiple_test(info);
 
     /* spawn_systhreads(systhread_pool, info); */
 
@@ -176,20 +218,13 @@ void alloc_workstruct(struct work_struct *flexsc_works, struct flexsc_init_info 
     }
 }
 
-void flexsc_create_workqueue(char *name, struct workqueue_struct *flexsc_workqueue) 
-{
-    printk("Creating flexsc workqueue...\n");
-    /* Create workqueue so that systhread can put a work */
-    flexsc_workqueue = create_workqueue(name);
-    printk("Address of flexsc_workqueue: %p\n", flexsc_workqueue);
-}
 
 asmlinkage long sys_flexsc_exit(void)
 {
     printk("%s\n", __func__);
     flexsc_destroy_workqueue(flexsc_workqueue);
     flexsc_free_works(flexsc_works);
-    flexsc_stop_systhreads(systhread_pool);
+    flexsc_stop_systhreads(syspool);
     /* flexsc_free_sysinfo(_sysinfo); */
     return 0;
 }
