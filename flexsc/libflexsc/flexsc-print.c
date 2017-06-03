@@ -10,7 +10,7 @@
  */
 void print_sysentry(struct flexsc_sysentry *entry)
 {
-    printf("%5d %5d %5d %5d: %9lu %19lu %9lu %9lu %9lu %9lu\n",
+    printf("%d-%d-%d-%d with %lu %lu %lu %lu %lu %lu\n",
             entry->sysnum, entry->nargs,
             entry->rstatus, entry->sysret,
             entry->args[0], entry->args[1],

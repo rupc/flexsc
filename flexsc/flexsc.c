@@ -20,9 +20,15 @@ size_t nentry; /* Reserved for devel mode */
 
 int thread_main(void *arg)
 {
-    /* printk("Hello kernel_thread via system call\n"); */
+    printk("Hello kernel_thread via system call\n");
+    while (1) {
+        ssleep(3);
+        printk("제발 좀 되라\n");
+
+    }
     return 0;
 }
+
 
 pid_t kernel_creation_test(void) 
 {
@@ -78,21 +84,36 @@ static void syswork_handler(struct work_struct *work)
     printk("flexsc: in syswork handler\n");
 }
 
-static int systhread_main(void *arg)
+#define MAX_THREADS 8
+struct task_struct *syspool[MAX_THREADS];
+struct flexsc_sysentry *k_sysentry;
+/* struct flexsc_sysentry *gentry[MAX_THREADS]; */
+
+int systhread_main(void *arg)
 {
     int cnt = 0;
+    /* int idx = *((int *)arg); */
+    /* printk("Got an index(%d)\n", idx); */
     
     // This entry pointer exactly points to an entry with having right offset
+
     struct work_struct flexsc_work;
     struct flexsc_sysentry *entry = (struct flexsc_sysentry *)(arg);
     FLEXSC_INIT_WORK(&flexsc_work, syswork_handler, entry);
 
-    // 현재 entry 포인터를 참조하려고 하면 에러가 발생한다는 것을 발견함.
+    ssleep(1);
+    /* printk("syspool[0], [1] = %p, %p\n", syspool[0], syspool[1]); */
+    printk(KERN_INFO "flexsc: systhread PID[%d] PPID[%d]\n", current->pid, current->parent->pid);
+    /* printk("gentry[%d]->rstatus\n", idx, gentry[idx]->rstatus); */
 
     while (1)
     {
-        /* printk(KERN_INFO "Thread Running:%d\n", cnt++); */
-        printk(KERN_INFO "Thread Running:%d, entry->rstatus:%d\n", cnt++, entry->rstatus);
+        /* printk(KERN_INFO "flexsc: systhread PID[%d] is running :%d\n", current->pid, cnt++); */
+        // 현재 entry 포인터를 참조하려고 하면 에러가 발생한다는 것을 발견함.
+        /* printk(KERN_INFO "Thread Running:%d, entry->rstatus:%d\n", cnt++, entry->rstatus); */
+        /* printk(KERN_EMERG "PID[%d]: I'm alive! %d %d %d\n", current->pid, entry->rstatus, entry->sysnum, entry->sysret); */
+        printk(KERN_EMERG "PID[%d]: I'm alive!\n", current->pid);
+        /* printk("%d %d\n", k_sysentry[idx].rstatus, k_sysentry[idx].sysnum); */
 
         /* while (entry->rstatus == FLEXSC_STATUS_FREE ||  */
                /* entry->rstatus == FLEXSC_STATUS_DONE) { */
@@ -110,8 +131,18 @@ static int systhread_main(void *arg)
     return 0;
 }
 
-#define MAX_THREADS 64
-static struct task_struct *syspool[MAX_THREADS];
+
+int sthread_main(void *arg)
+{
+    printk("Hello kernel_thread via system call\n");
+    while (1) {
+        ssleep(3);
+        printk("제발 좀 되라\n");
+
+    }
+    return 0;
+}
+
 int kthread_multiple_test(struct flexsc_init_info *info) 
 {
     int i;
@@ -121,15 +152,21 @@ int kthread_multiple_test(struct flexsc_init_info *info)
 
     for (i = 0; i < MAX_THREADS; i++) {
         snprintf(name, sizeof(name), "systhread[%d]", i);
-        syspool[i] = kthread_create(systhread_main, &(info->sysentry[i]), name);
+        /* printk("sysentry[i] at %p\nIts value: ", &(info->sysentry[i])); */
+        /* print_sysentry(&(info->sysentry[i])); // OK, This statement works */
+
+        /* gentry[i] = &(info->sysentry[i]); */
+        barrier();
+        /* syspool[i] = kthread_create(systhread_main, (void *)(&(info->sysentry[i])), name); */
+        syspool[i] = kthread_create(systhread_main, (void *)&(info->sysentry[i]), name);
+
 
         if (!syspool[i]) {
-            printk(KERN_ERR "Thread[%d] creation failed\n", i);
+            printk(KERN_ERR "systhread[%d] creation failed\n", i);
             break;
         }
-        
 
-        printk(KERN_INFO "Thread[%d] created successfully\n", i);
+        printk(KERN_INFO "systhread[%d] at %p created successfully\n", i, syspool[i]);
 
         kthread_bind(syspool[i], DEFAULT_CPU); 
         wake_up_process(syspool[i]);
@@ -137,6 +174,7 @@ int kthread_multiple_test(struct flexsc_init_info *info)
 
     return 0;
 }
+
 void flexsc_create_workqueue(char *name, struct workqueue_struct *flexsc_workqueue) 
 {
     printk("Creating flexsc workqueue...\n");
@@ -148,6 +186,35 @@ void flexsc_create_workqueue(char *name, struct workqueue_struct *flexsc_workque
 int kthread_worker_fn_test(void)
 {
     thread_st = kthread_create(kthread_worker_fn, NULL, "kthread_worker");
+
+}
+
+
+static pid_t pid_systhread[MAX_THREADS];
+int kernel_thread_multiple_test(struct flexsc_init_info *info)
+{
+    int i;
+    /* flexsc_workqueue = create_workqueue("flexsc_workqueue"); */
+    pid_t pid;
+    int num = MAX_THREADS;
+
+    /* num = 2; */
+    for (i = 0; i < 1; i++) {
+        pid = kernel_thread(sthread_main, (void *)NULL, CLONE_VM | CLONE_FS | CLONE_FILES);
+
+        if (pid < 0) {
+            printk("Error when create kernel_thread\n");
+        }
+
+        printk("flexsc: systhread[%d, %d] created successfully\n", pid, i);
+        pid_systhread[i] = pid;
+    }
+
+    return 0;
+}
+
+int kthread_copy(struct flexsc_init_info *info)
+{
 
 }
 
@@ -164,15 +231,37 @@ sys_flexsc_register(struct flexsc_init_info __user *info)
     user_pid = current->pid;
     task = current;
 
-    printk("flexsc: smp_processor_id(): %d\n", smp_processor_id());
-    printk("flexsc: process(%d) calls flexsc\n", user_pid);
-    printk("flexsc: nentry: %ld\n", nentry);
+    k_sysentry = kmalloc(sizeof(struct flexsc_sysentry) * nentry, GFP_KERNEL);
+    copy_from_user((void *)k_sysentry, (void *)(info->sysentry), sizeof(struct flexsc_sysentry) * nentry);
 
-    alloc_systhreads(systhread_pool, SYSENTRY_NUM_DEFAULT);
-    alloc_workstruct(flexsc_works, info);
+    /* k_sysentry = (struct flexsc_sysentry *)flexsc_mmap(sizeof(struct flexsc_sysentry) * nentry, 0, NULL);
+    printk("k_sysentry(%p), sz:%ld\n", k_sysentry, sizeof(k_sysentry)); */
+
+    print_sysentry(&k_sysentry[0]);
+    print_sysentry(&k_sysentry[1]);
+    print_sysentry(&k_sysentry[2]);
+    print_sysentry(&k_sysentry[3]);
+
+
+    /* gentry = info->sysentry; */
+
+    printk("flexsc: size of a sysentry: %ld\n", sizeof(info->sysentry[0]));
+    /* print_sysentry(&((info->sysentry)[0]));
+    print_sysentry(&((info->sysentry)[1]));
+    print_sysentry(&((info->sysentry)[2]));
+    print_sysentry(&((info->sysentry)[3])); */
+
+    printk("flexsc: smp_processor_id(): %d\n", smp_processor_id());
+    printk("flexsc: process(%d) calls flexsc_register\n", user_pid);
+    printk("flexsc: number of entry: %ld\n", nentry);
+    printk("flexsc: size of a entry: %ld\n", sizeof(info->sysentry[0]));
+
+    /* alloc_systhreads(systhread_pool, SYSENTRY_NUM_DEFAULT); */
+    /* alloc_workstruct(flexsc_works, info); */
 
     
-    kthread_multiple_test(info);
+    /* kthread_multiple_test(info); */
+    kernel_thread_multiple_test(info);
 
     /* spawn_systhreads(systhread_pool, info); */
 
@@ -224,7 +313,7 @@ asmlinkage long sys_flexsc_exit(void)
     printk("%s\n", __func__);
     flexsc_destroy_workqueue(flexsc_workqueue);
     flexsc_free_works(flexsc_works);
-    flexsc_stop_systhreads(syspool);
+    flexsc_stop_systhreads();
     /* flexsc_free_sysinfo(_sysinfo); */
     return 0;
 }
@@ -252,7 +341,7 @@ void flexsc_free_works(struct work_struct *flexsc_works)
     kfree(flexsc_works);
 }
 
-void flexsc_stop_systhreads(struct task_struct *syspool[])
+void flexsc_stop_systhreads()
 {
     int i;
 
@@ -430,3 +519,14 @@ asmlinkage long sys_flexsc_start_hook(pid_t hooked_pid)
     return 0;
 }
 EXPORT_SYMBOL_GPL(sys_flexsc_start_hook);
+
+void print_sysentry(struct flexsc_sysentry *entry)
+{
+    printk("%p %d-%d-%d-%d with %lu,%lu,%lu,%lu,%lu,%lu\n",
+            entry,
+            entry->sysnum, entry->nargs,
+            entry->rstatus, entry->sysret,
+            entry->args[0], entry->args[1],
+            entry->args[2], entry->args[3],
+            entry->args[4], entry->args[5]);
+}

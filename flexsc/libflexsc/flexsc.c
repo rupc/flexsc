@@ -76,7 +76,9 @@ int init_map_syspage(struct flexsc_init_info *info)
     struct flexsc_sysentry *entry;
 
     info->npages = SYSPAGE_PER_TASK;
-    entry = (struct flexsc_sysentry *)aligned_alloc(pgsize, info->npages);
+    /* entry = (struct flexsc_sysentry *)aligned_alloc(pgsize, info->npages); */
+    entry = (struct flexsc_sysentry *)malloc(pgsize);
+    entry[0].rstatus = 0;
 
     if (entry == NULL) {
         return FLEXSC_ERR_MAPSYSPAGE;
@@ -85,6 +87,19 @@ int init_map_syspage(struct flexsc_init_info *info)
     info->nentry = total / sizeof(entry[0]);
     info->sysentry = entry;
     info->total_bytes = total;
+
+    info->sysentry[0].sysnum = 9;
+    info->sysentry[0].rstatus = 90;
+    info->sysentry[0].sysret = 900;
+    info->sysentry[0].args[0] = 11;
+    info->sysentry[0].args[1] = 12;
+    info->sysentry[0].args[2] = 13;
+    info->sysentry[0].args[3] = 14;
+    info->sysentry[0].args[4] = 15;
+    info->sysentry[0].args[5] = 16;
+
+    print_sysentry(&(info->sysentry[0]));
+
 
     return 0;
 }
@@ -114,6 +129,7 @@ void print_init_info(struct flexsc_init_info *info)
 {
     printf("flexsc_init_info\n");
     printf("number of sysentry: %ld\n", sizeof(info->sysentry) / sizeof(info->sysentry[0]));
+    printf("starting address of sysentry: %p\n", info->sysentry);
     printf("user cpu:%x, kernel cpu:%x\n", (info->cpuinfo).user_cpu, (info->cpuinfo).kernel_cpu);
     printf("npage: %ld\n", info->npages);
     printf("nentry: %ld\n", info->nentry);
