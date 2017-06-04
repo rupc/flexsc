@@ -138,4 +138,5 @@ void alloc_workstruct(struct work_struct *flexsc_works, struct flexsc_init_info 
 void spawn_systhreads(struct task_struct *systhread_pool[], struct flexsc_init_info *info);
 void print_sysentry(struct flexsc_sysentry *entry);
 
+pid_t flexsc_kernel_thread(int (*fn)(void *), void *arg, unsigned long flags);
 void * flexsc_mmap(size_t size, int locked, int *errp);

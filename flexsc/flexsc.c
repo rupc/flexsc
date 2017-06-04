@@ -218,6 +218,28 @@ int kthread_copy(struct flexsc_init_info *info)
 
 }
 
+pid_t flexsc_kernel_thread(int (*fn)(void *), void *arg, unsigned long flags)
+{
+    printk("flexsc: stack_start:%p, stack_size:%ld\n", fn, arg);
+    return _do_fork(flags, (unsigned long)fn,
+        (unsigned long)arg, NULL, NULL, 0);
+}
+
+static __always_inline long
+do_syscall(unsigned int sysname, long sysargs[]) {
+    extern const sys_call_ptr_t sys_call_table[];
+
+    /* if (unlikely(sysname >= __SYSNUM_flexsc_base)) {
+        return -1;
+    } */
+    if (likely(sysname < 500)) {
+        return sys_call_table[sysname](sysargs[0], sysargs[1],
+                                       sysargs[2], sysargs[3],
+                                       sysargs[4], sysargs[5]);
+    }
+    return -ENOSYS;
+}
+
 asmlinkage long 
 sys_flexsc_register(struct flexsc_init_info __user *info)
 {
@@ -231,7 +253,15 @@ sys_flexsc_register(struct flexsc_init_info __user *info)
     user_pid = current->pid;
     task = current;
 
+    long sysargs[6] = {0,};
+    long sysret = do_syscall(186, sysargs);
+    printk("test do_syscall(gettiod):%ld\n", sysret);
+    
     k_sysentry = kmalloc(sizeof(struct flexsc_sysentry) * nentry, GFP_KERNEL);
+    memset(k_sysentry, 0, sizeof(struct flexsc_sysentry) * nentry);
+    print_sysentry(&k_sysentry[0]);
+    printk("Before copy_from_user\n");
+
     copy_from_user((void *)k_sysentry, (void *)(info->sysentry), sizeof(struct flexsc_sysentry) * nentry);
 
     /* k_sysentry = (struct flexsc_sysentry *)flexsc_mmap(sizeof(struct flexsc_sysentry) * nentry, 0, NULL);
@@ -261,10 +291,15 @@ sys_flexsc_register(struct flexsc_init_info __user *info)
 
     
     /* kthread_multiple_test(info); */
-    kernel_thread_multiple_test(info);
+    /* kernel_thread_multiple_test(info); */
 
     /* spawn_systhreads(systhread_pool, info); */
 
+    int pid = flexsc_kernel_thread(sthread_main, (void *)1024, CLONE_PARENT | CLONE_FS | CLONE_FILES | CLONE_SETTLS);
+
+    if (pid < 0) {
+        printk("Error when create kernel_thread\n");
+    }
     return 0;
 }
 EXPORT_SYMBOL_GPL(sys_flexsc_register);
@@ -376,6 +411,7 @@ void flexsc_free_sysinfo(struct flexsc_systhread_info *_sysinfo[])
 static struct task_struct *__syspool[8] = {NULL, };
 
 void spawn_systhreads(struct task_struct *systhread_pool[], struct flexsc_init_info *info)
+
 {
     struct flexsc_sysentry *sysentry = info->sysentry;
     int nentry = info->nentry, i;
@@ -438,7 +474,7 @@ static int systhread_fn(void *args)
         /* When waked up by flexsc_register() or other functions,
          * It checks whether a request comes in.  */
         if (entry->rstatus == FLEXSC_STATUS_SUBMITTED) {
-            /**
+            /*
              * Put a work into workqueue. 
              * At this moment, rstatus is being FLEXSC_STATUS_BUSY.
              * Workqueue handler of sysentry stores return value to sysret,
@@ -447,7 +483,7 @@ static int systhread_fn(void *args)
             entry->rstatus = FLEXSC_STATUS_BUSY;
             queue_work_on(DEFAULT_CPU, flexsc_workqueue, syswork);
 
-            /**
+            /*
              * Wait until a system call issued is done...
              * If it completes, rstatus have FLEXSC_STATUS_DONE.
              */
@@ -522,7 +558,7 @@ EXPORT_SYMBOL_GPL(sys_flexsc_start_hook);
 
 void print_sysentry(struct flexsc_sysentry *entry)
 {
-    printk("%p %d-%d-%d-%d with %lu,%lu,%lu,%lu,%lu,%lu\n",
+    printk("[%p] %d-%d-%d-%d with %lu,%lu,%lu,%lu,%lu,%lu\n",
             entry,
             entry->sysnum, entry->nargs,
             entry->rstatus, entry->sysret,
