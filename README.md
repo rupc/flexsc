@@ -11,8 +11,8 @@ You should take *different approach* to FlexSC because at the time when the pape
 - arch/x86/entry/entry_64.S -> Add system call hooking function
 
 ## Reference
-[spinlock/flexsc](https://github.com/spinlock/flexsc)
-[kernel_thread() causes segfault](http://www.spinics.net/lists/newbies/msg57467.html)
+- [spinlock/flexsc](https://github.com/spinlock/flexsc)
+- [kernel_thread() causes segfault](http://www.spinics.net/lists/newbies/msg57467.html)
 
 
 
