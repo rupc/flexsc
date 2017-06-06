@@ -28,6 +28,7 @@ You should take *different approach* to FlexSC because at the time when the pape
 
 ## Reference
 - [spinlock/flexsc](https://github.com/spinlock/flexsc)
+- [spwilson2/async-sys-module](https://github.com/spwilson2/async-sys-module)
 - [kernel_thread() causes segfault](http://www.spinics.net/lists/newbies/msg57467.html)
 
 
