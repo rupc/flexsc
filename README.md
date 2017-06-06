@@ -2,8 +2,8 @@
 trying to implement flexsc on ubuntu-linux 4.4.0. At now, codebase is dirty & messy :( :mag: I will clean it up as soon as I make successful communication between kernel thread and user thread via shared memeory.
 
 ## Key idea of implementing FlexSC
-        - Shared memory between kernel thread and user thread in user space(**Not in kernel space**) so that any kernel thread(called systhread in FlexSC) can access the shared memory
-        - Asynchronous process of system call through workqueue interface
+- Shared memory between kernel thread and user thread in user space(**Not in kernel space**) so that any kernel thread(called systhread in FlexSC) can access the shared memory
+- Asynchronous process of system call through workqueue interface
 
 
 ## Few Notes
