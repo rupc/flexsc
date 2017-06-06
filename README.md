@@ -1,14 +1,8 @@
 # flexsc(osdi 2010)
-trying to implement flexsc on ubuntu-linux 4.4.0
+trying to implement flexsc on ubuntu-linux 4.4.0. At now, codes are dirty & messy :( :foggy: I will clean it up as soon as I make successful communication between kernel thread and user thread via shared memeory.
 
 You should take *different approach* to FlexSC because at the time when the paper is written(linux 2.6), it is possible to simply call kernel_thread() to create kernel_thread with sharing memory of calling user space process. But on recent kernel, kernel_thread() with (CLONE_FILES, CLONE_FD | CLONE_VM) flag causes segmentation fault. (See [kernel_thread() causes segfault](http://www.spinics.net/lists/newbies/msg57445.html))
 
-## Modified files list
-- Makefile -> Add flexsc 
-- flexsc/
-- include/linux/sched.h - struct task_struct -> Add struct syspage
-- arch/x86/entry/syscalls/syscall_64.tbl -> Add system call 400. flexsc_register, 401 flexsc_wait, 402 flexsc_start_hook
-- arch/x86/entry/entry_64.S -> Add system call hooking function
 
 ## Memory mapping related API
 - [remap_pfn_range - remap kernel memory to userspace](http://elixir.free-electrons.com/linux/latest/source/mm/memory.c#L1876)
@@ -28,8 +22,17 @@ You should take *different approach* to FlexSC because at the time when the pape
 
 ## Reference
 - [spinlock/flexsc](https://github.com/spinlock/flexsc)
-- [spwilson2/async-sys-module](https://github.com/spwilson2/async-sys-module)
+- [spwilson2/async-sys-module](https://github.com/spwilson2/async-sys-module): An Asynchronous IO kernel module that communicates with the kernel through a shared memory ring.
+- [imwack/mmap](https://github.com/imwack/mmap): User space sharing memory with kernel module Using proc & mmap
+- [bwrenn/mmap_example](https://github.com/bwrenn/mmap_example): An example of mmap to share memory between a kernel module and a user space application
+- [Alessio-Faina/uniioShd](https://github.com/Alessio-Faina/uniioShd): Test for fast sharing of memory between kernel and many user programs
+- [dmansilva/OSProject04](https://github.com/dmansilva/OSProject04): The goal was to implement a new system call that can setup a shared page of memory
 - [kernel_thread() causes segfault](http://www.spinics.net/lists/newbies/msg57467.html)
 
 
-
+## Modified files list(Not yet complete list)
+- Makefile -> Add flexsc 
+- flexsc/
+- include/linux/sched.h - struct task_struct -> Add struct syspage
+- arch/x86/entry/syscalls/syscall_64.tbl -> Add system call 400. flexsc_register, 401 flexsc_wait, 402 flexsc_start_hook
+- arch/x86/entry/entry_64.S -> Add system call hooking function
