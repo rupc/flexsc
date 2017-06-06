@@ -99,9 +99,6 @@ int main(int argc, const char *argv[])
     printf("PID: %d\n", mypid); */
 
     /* Wait until it gets SIGTERM */
-    while (1) {
-        sleep(1);
-    }
 
     return 0;
 }

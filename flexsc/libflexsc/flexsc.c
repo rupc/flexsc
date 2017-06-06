@@ -134,6 +134,7 @@ void print_init_info(struct flexsc_init_info *info)
     printf("npage: %ld\n", info->npages);
     printf("nentry: %ld\n", info->nentry);
     printf("total_bytes: %ld\n", info->total_bytes);
+    printf("user pid: %d, ppid: %d\n", getpid(), getppid());
 }
 
 struct flexsc_sysentry *

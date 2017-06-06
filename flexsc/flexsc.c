@@ -23,7 +23,7 @@ int thread_main(void *arg)
     printk("Hello kernel_thread via system call\n");
     while (1) {
         ssleep(3);
-        printk("제발 좀 되라\n");
+        printk("blah blah\n");
 
     }
     return 0;
@@ -137,7 +137,7 @@ int sthread_main(void *arg)
     printk("Hello kernel_thread via system call\n");
     while (1) {
         ssleep(3);
-        printk("제발 좀 되라\n");
+        printk("blah blah...");
 
     }
     return 0;
