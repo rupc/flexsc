@@ -16,12 +16,14 @@ You should take *different approach* to FlexSC because at the time when the pape
 - [High memory & Low Memory](http://egloos.zum.com/slgi97/v/10973585): mapping with HIGH_MEM of user process
 
 ## Shared memory between user thread and kernel thread
-- https://stackoverflow.com/questions/36762974/how-to-use-mmapproc-shared-memory-between-kernel-and-userspace
-- https://stackoverflow.com/questions/7943993/how-to-use-mmap-to-share-user-space-and-kernel-threads
+- [Performing Direct I/O: Detailed description of get_user_pages](http://www.makelinux.net/ldd3/chp-15-sect-3)
+- [how-to-use-mmapproc-shared-memory-between-kernel-and-userspace](https://stackoverflow.com/questions/36762974/how-to-use-mmapproc-shared-memory-between-kernel-and-userspace)
+- [how-to-use-mmap-to-share-user-space-and-kernel-threads](https://stackoverflow.com/questions/7943993/how-to-use-mmap-to-share-user-space-and-kernel-threads)
 - [User space memory access from the Linux kernel](https://www.ibm.com/developerworks/library/l-kernel-memory-access/index.html)
 - [SHARING MEMORY BETWEEN KERNEL AND USER SPACE IN LINUX](ftp://164.41.45.4/pub/os/rtlinux/papers/rtos-ws/p-c01_motylewski.pdf)
 - [How to mmap a file in linux kernel space?](https://stackoverflow.com/questions/13465095/how-to-mmap-a-file-in-linux-kernel-space)
 - [Implementing mmap for transferring data from user space to kernel space](https://coherentmusings.wordpress.com/2014/06/10/implementing-mmap-for-transferring-data-from-user-space-to-kernel-space/)
+- [how-can-i-access-memory-at-known-physical-address-inside-a-kernel-module](https://stackoverflow.com/questions/4219504/how-can-i-access-memory-at-known-physical-address-inside-a-kernel-module)
 
 
 ## Reference
