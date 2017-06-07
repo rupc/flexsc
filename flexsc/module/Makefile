@@ -4,7 +4,7 @@ obj-m := $(addsuffix .o,$(name))
 
 KERNEL_DIR = /lib/modules/$(shell uname -r)/build
 PWD = $(shell pwd)
-ALREADY_INSTERTTED=$(shell lsmod | grep syscall_hooking | awk '{print $$1;}')
+ALREADY_INSTERTTED=$(shell lsmod | grep $(name) | awk '{print $$1;}')
 
 ccflags-y=-I$(PWD)
 
@@ -17,11 +17,14 @@ ifneq ($(ALREADY_INSTERTTED),)
 	sudo rmmod $(name)
 endif
 	sudo insmod $(name).ko
-	../user/user-program
 	dmesg
 
+user:
+	../user/user-program
+
+
 rm :
-	sudo rmmod syscall_hooking
+	sudo rmmod $(name)
 	$(MAKE) -C $(KERNEL_DIR) SUBDIRS=$(PWD) clean
 	rm $(obj) $(exe)
 

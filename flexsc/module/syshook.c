@@ -9,25 +9,33 @@
 #include "syshook.h"
 
 /* syscall thread main function */
-int kmain(void *arg)
+int queue_worker(void *arg)
 {
     struct flexsc_sysentry *entry = (struct flexsc_sysentry *)arg;
     int cnt = 0;
+    int i;
 
     printk("kthread[%d, %d], user[%d, %d] starts\n", current->pid, current->parent->pid, utask->pid, utask->parent->pid);
-    print_sysentry(&entry[0]);
+    printk("*****************  entry[3] before main loop  *****************\n");
+    print_sysentry(&entry[3]);
 
     while (1) {
-        if (cnt == 4) {
-            do_exit(1);
-            break;
-        }
-        ssleep(2);
-        printk("hello! %d\n", cnt++);
+        /* for (i = 0; i < NUM_SYSENTRY; i++) {
+            if (entry[i].rstatus == FLEXSC_STATUS_SUBMITTED) {
+                printk("entry[%d].rstatus == SUBMITTED %d\n", i);
+            }
+        } */
+        printk("*****************  entry[3]  *****************\n");
+        print_sysentry(&entry[3]);
 
-        while(!kthread_should_stop()){
-            schedule();
+        ssleep(3);
+        /* printk("hello! %d\n", cnt++); */
+
+        if (kthread_should_stop()) {
+            printk("kernel thread dying...\n");
+            do_exit(0);
         }
+
     }
     return 0;
 }
@@ -37,17 +45,17 @@ struct task_struct *kstruct;
 asmlinkage long 
 sys_hook_flexsc_register(struct flexsc_init_info __user *info)
 {
-    int pid, i, npinned_pages;
-    struct flexsc_sysentry *entry = info->sysentry;
-    phys_addr_t physical_address;
+    int i, npinned_pages;
+    struct flexsc_sysentry *entry;
+    /* phys_addr_t physical_address; */
 
     utask = current;
 
-    printk("flexsc_register() hooked by %d\n", current->pid);
-    printk("%d\n", PAGE_SHIFT);
-    printk("sizeof entry: %ld, %ld\n", sizeof(entry), sizeof(*entry));
-    print_multiple_sysentry(entry, 8);
+    /* Print first 8 sysentries */
+    print_multiple_sysentry(info->sysentry, 8);
 
+    /* Get syspage from user space 
+     * and map it to kernel virtual address space */
     npinned_pages = get_user_pages(
             utask, 
             utask->mm, /* mm_strcut of user task */
@@ -64,37 +72,30 @@ sys_hook_flexsc_register(struct flexsc_init_info __user *info)
     }
 
     sysentry_start_addr = kmap(pinned_pages[0]);
+
     entry = (struct flexsc_sysentry *)sysentry_start_addr;
-    mypage = virt_to_page(info->sysentry);
-    physical_address = virt_to_phys(info->sysentry);
-
-    printk("# of pinned pages:                   %d\n", npinned_pages);
-    printk("pinned_pages[0]                      %p\n", pinned_pages[0]);
-    printk("page_address(pinned_pages[0]):       %p\n", page_address(pinned_pages[0]));
-    printk("sysentry_start_addr:                 %p\n", sysentry_start_addr);
-
-    printk("physical address                     %p\n", (void *)physical_address);
-    printk("info->sysentry                       %p\n", info->sysentry);
-    printk("__pa(info->sysentry)                 %p\n", (void *)__pa(info->sysentry));
-    printk("virt_to_page(info->sysentry)         %p\n", virt_to_page(info->sysentry));
-
-#define virt_to_pfn(kaddr)	(__pa(kaddr) >> PAGE_SHIFT)
-    printk("virt_to_pfn(sysentry)                %ld\n", virt_to_pfn(info->sysentry));
-    printk("virt_to_phys(sysentry)               %p\n", (void *)virt_to_phys(info->sysentry));
-
-    printk("page->virt                           %p\n", page_address(virt_to_page(info->sysentry)));
-    printk("%20s\n", "After kamp(pinned_pages)");
-
     print_multiple_sysentry(entry, 8);
-    /* entry[0].sysnum = 1000; */
-    info->sysentry[0].sysnum = 9999;
-    print_multiple_sysentry(entry, 1);
 
-    kstruct = kthread_run(kmain, (void *)entry, "systhread 0");
-    /* print_sysentry(&entry[1]); */
+    kstruct = kthread_run(queue_worker, (void *)entry, "flexsc-systhread");
     return 0;
 }
 
+asmlinkage long 
+sys_hook_flexsc_exit(void)
+{
+    int i, ret;
+    printk("flexsc_exit hooked start\n");
+    for (i = 0; i < NUM_PINNED_PAGES; i++) {
+        kunmap(pinned_pages[i]);
+    }
+
+    ret = kthread_stop(kstruct);
+    if (!ret) {
+        printk("kthread stopped\n");
+    }
+    printk("flexsc_exit hooked end\n");
+    return 0;
+}
 
 int syscall_hooking_init(void)
 {
@@ -104,33 +105,31 @@ int syscall_hooking_init(void)
         printk("Can't find sys_call_table\n");
         return -1;
     }
-    printk("sys_call_table is at [%p]\n", sys_call_table);
+    printk("-----------------------syscall hooking module-----------------------\n");
+    printk("[%p] sys_call_table\n", sys_call_table);
 
     cr0 = read_cr0();
     write_cr0(cr0 & ~0x00010000);
 
-    original_call = (void *)sys_call_table[__NR_flexsc_register];
+    flexsc_register_orig = (void *)sys_call_table[__NR_flexsc_register];
+    flexsc_exit_orig = (void *)sys_call_table[__NR_flexsc_exit];
     sys_call_table[__NR_flexsc_register] = (void *)sys_hook_flexsc_register;
+    sys_call_table[__NR_flexsc_exit] = (void *)sys_hook_flexsc_exit;
 
     write_cr0(cr0);
-    printk("%d %s Hooking Init done!\n", __LINE__, __func__);
+    printk("%d %s syscall hooking module init\n", __LINE__, __func__);
     return 0;
 }
 
 void syscall_hooking_cleanup(void)
 {
     unsigned long cr0 = read_cr0();
-    int i;
     write_cr0(cr0 & ~0x00010000);
-    sys_call_table[__NR_flexsc_register] = (void *)original_call;
+    sys_call_table[__NR_flexsc_register] = (void *)flexsc_register_orig;
+    sys_call_table[__NR_flexsc_exit] = (void *)flexsc_exit_orig;
     write_cr0(cr0);
+
     printk("Hooking moudle cleanup\n");
-
-    for (i = 0; i < NUM_PINNED_PAGES; i++) {
-        kunmap(pinned_pages[i]);
-    }
-
-    /* kthread_stop(kstruct); */
     return;
 }
 
@@ -170,6 +169,31 @@ void print_multiple_sysentry(struct flexsc_sysentry *entry, size_t n)
     for (i = 0; i < n; i++) {
         print_sysentry(&entry[i]);
     }
+}
+
+void address_stuff(void *addr)
+{
+    /* printk("flexsc_register() hooked by %d\n", current->pid);
+    printk("%d\n", PAGE_SHIFT);
+    printk("sizeof entry: %ld, %ld\n", sizeof(entry), sizeof(*entry)); */
+/* 
+    physical_address = virt_to_phys(info->sysentry);
+
+    printk("# of pinned pages:                   %d\n", npinned_pages);
+    printk("pinned_pages[0]                      %p\n", pinned_pages[0]);
+    printk("page_address(pinned_pages[0]):       %p\n", page_address(pinned_pages[0]));
+    printk("sysentry_start_addr:                 %p\n", sysentry_start_addr);
+
+    printk("physical address                     %p\n", (void *)physical_address);
+    printk("info->sysentry                       %p\n", info->sysentry);
+    printk("__pa(info->sysentry)                 %p\n", (void *)__pa(info->sysentry));
+    printk("virt_to_page(info->sysentry)         %p\n", virt_to_page(info->sysentry));
+
+    printk("virt_to_pfn(sysentry)                %ld\n", virt_to_pfn(info->sysentry));
+    printk("virt_to_phys(sysentry)               %p\n", (void *)virt_to_phys(info->sysentry));
+
+    printk("page->virt                           %p\n", page_address(virt_to_page(info->sysentry)));
+    printk("%20s\n", "After kamp(pinned_pages)"); */
 }
     
 module_init(syscall_hooking_init);

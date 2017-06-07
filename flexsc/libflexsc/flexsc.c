@@ -77,7 +77,8 @@ int init_map_syspage(struct flexsc_init_info *info)
 
     info->npages = SYSPAGE_PER_TASK;
     /* entry = (struct flexsc_sysentry *)aligned_alloc(pgsize, info->npages); */
-    entry = (struct flexsc_sysentry *)malloc(pgsize);
+    entry = (struct flexsc_sysentry *)aligned_alloc(pgsize, pgsize * (info->npages));
+    /* entry = (struct flexsc_sysentry *)malloc(pgsize); */
     entry[0].rstatus = 0;
 
     if (entry == NULL) {

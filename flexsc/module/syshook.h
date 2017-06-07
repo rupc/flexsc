@@ -21,12 +21,8 @@
 #define SYSTABLE_LOC 0xffffffff81a001c0 
 
 #define NUM_PINNED_PAGES 1
+#define NUM_SYSENTRY 64
 
-
-unsigned long **locate_sys_call_table(void);
-
-void print_sysentry(struct flexsc_sysentry *entry);
-void print_multiple_sysentry(struct flexsc_sysentry *entry, size_t n);
 
 struct task_struct *utask;
 struct page *mypage;
@@ -34,4 +30,14 @@ struct page *pinned_pages[NUM_PINNED_PAGES];
 void *sysentry_start_addr;
 unsigned long **sys_call_table;
 
-asmlinkage long (*original_call)(const char __user *, int, umode_t);
+asmlinkage long (*flexsc_register_orig)(const char __user *, int, umode_t);
+asmlinkage long (*flexsc_exit_orig)(void);
+
+unsigned long **locate_sys_call_table(void);
+
+void print_sysentry(struct flexsc_sysentry *entry);
+void print_multiple_sysentry(struct flexsc_sysentry *entry, size_t n);
+void address_stuff(void *addr);
+
+
+#define virt_to_pfn(kaddr)	(__pa(kaddr) >> PAGE_SHIFT)
