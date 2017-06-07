@@ -88,17 +88,40 @@ int init_map_syspage(struct flexsc_init_info *info)
     info->sysentry = entry;
     info->total_bytes = total;
 
-    info->sysentry[0].sysnum = 9;
-    info->sysentry[0].rstatus = 90;
-    info->sysentry[0].sysret = 900;
-    info->sysentry[0].args[0] = 11;
-    info->sysentry[0].args[1] = 12;
-    info->sysentry[0].args[2] = 13;
-    info->sysentry[0].args[3] = 14;
-    info->sysentry[0].args[4] = 15;
-    info->sysentry[0].args[5] = 16;
+    info->sysentry[0].sysnum = 1;
+    info->sysentry[0].rstatus = 2;
+    info->sysentry[0].nargs = 3;
+    info->sysentry[0].sysret = 4;
+    info->sysentry[0].args[0] = 10;
+    info->sysentry[0].args[1] = 11;
+    info->sysentry[0].args[2] = 12;
+    info->sysentry[0].args[3] = 13;
+    info->sysentry[0].args[4] = 14;
+    info->sysentry[0].args[5] = 15;
 
-    print_sysentry(&(info->sysentry[0]));
+    info->sysentry[1].sysnum = 11;
+    info->sysentry[1].rstatus = 22;
+    info->sysentry[1].nargs = 33;
+    info->sysentry[1].sysret = 44;
+    info->sysentry[1].args[0] = 100;
+    info->sysentry[1].args[1] = 110;
+    info->sysentry[1].args[2] = 120;
+    info->sysentry[1].args[3] = 130;
+    info->sysentry[1].args[4] = 140;
+    info->sysentry[1].args[5] = 150;
+
+    info->sysentry[7].sysnum = 7;
+    info->sysentry[7].rstatus = 77;
+    info->sysentry[7].sysret = 777;
+    info->sysentry[7].nargs = 7777;
+    info->sysentry[7].args[0] = 1;
+    info->sysentry[7].args[1] = 2;
+    info->sysentry[7].args[2] = 3;
+    info->sysentry[7].args[3] = 4;
+    info->sysentry[7].args[4] = 5;
+    info->sysentry[7].args[5] = 6;
+
+    /* print_sysentry(&(info->sysentry[0])); */
 
 
     return 0;

@@ -15,7 +15,10 @@
 #include <linux/hugetlb.h>
 #include <linux/delay.h>
 #include <linux/kthread.h>
+#include <linux/types.h>
 
+#include <asm/page.h>
+#include <asm/io.h>
 #include "../flexsc.h"
 
 #define SEARCH_BASE 0xffffffff81000000
@@ -78,28 +81,53 @@ void print_sysentry(struct flexsc_sysentry *entry)
             entry->args[2], entry->args[3],
             entry->args[4], entry->args[5]);
 }
+int haha=3;
+struct task_struct *utask;
+struct page *mypage;
+#define NUM_PINNED_PAGES 1
+struct page *pinned_pages[NUM_PINNED_PAGES];
+void *sysentry_start_addr;
+
+/* syscall thread main function */
 int kmain(void *arg)
 {
-    struct flexsc_sysentry *entry = (struct flexsc_sysentry *)arg;
+    struct flexsc_sysentry *entry = (struct flexsc_sysentry *)arg);
+    /* struct flexsc_sysentry *entry = (struct flexsc_sysentry *)phys_to_virt((phys_addr_t)arg); */
+    /* struct flexsc_sysentry *entry = (struct flexsc_sysentry *)arg; */
     struct flexsc_sysentry tmp;
     int is_ok;
+    int cnt = 0;
 
-    printk("entering kmain!\n");
+    /* printk("************glbal %d\n", haha);
+    printk("Got phys        %p\n", (void *)arg);
+    printk("phys_to_virt    %p\n", entry); */
+    /* printk("%d           \n", entry->rstatus);   */
+
+    printk("Kthread[%d, %d], User[%d, %d] starts\n", current->pid, current->parent->pid, utask->pid, utask->parent->pid);
+    print_sysentry(&entry[0]);
     printk("given sysentry %p\n", entry);
 
-    is_ok = access_ok(VERIFY_WRITE, entry, 64);
+    struct mm_struct *my_mm = utask->mm;
+    struct vm_area_struct *my_vma = my_mm->mmap;
+
+    /* struct page *_syspage = alloc_page(GFP_KERNEL);
+    void *virt_syspage = page_address(_syspage);
+    printk("virt_syspage        %p\n", virt_syspage); */
+
+    /* remap_pfn_range(my_vma, my_vma->start, 0, 1024, PAGE_SHARED); */
+    /* is_ok = access_ok(VERIFY_WRITE, entry, 64);
 
     if (copy_from_user((void *)&tmp, (void *)entry, 64)) {
+        printk("copy error\n");
         return -EFAULT;
     }
     if (is_ok) {
         printk("is_ok %d\n", is_ok);
-        /* printk("%p->%d\n", &tmp, tmp.]); */
+        [>printk("%p->%d\n", &tmp, tmp.]);<]
         print_sysentry(&tmp);
-    }
-    int cnt = 0;
+    } */
     while (1) {
-        if (cnt == 7) {
+        if (cnt == 4) {
             do_exit(1);
             break;
         }
@@ -113,6 +141,7 @@ int kmain(void *arg)
     }
     return 0;
 }
+
 void print_multiple_sysentry(struct flexsc_sysentry *entry, size_t n) 
 {
     int i;
@@ -132,14 +161,58 @@ asmlinkage long sys_hook_flexsc_register(struct flexsc_init_info __user *info)
     } */
     struct flexsc_sysentry *entry = info->sysentry;
     int i;
+    int npinned_pages;
+    utask = current;
+    phys_addr_t physical_address;
+    physical_address = virt_to_phys(info->sysentry);
+
     printk("flexsc_register() hooked by %d\n", current->pid);
     printk("%d\n", PAGE_SHIFT);
     printk("sizeof entry: %ld, %ld\n", sizeof(entry), sizeof(*entry));
-    printk("%p in virt, %p in phy\n", info, __pa(info));
-
     print_multiple_sysentry(entry, 8);
 
-    kstruct = kthread_run(kmain, (void *)&entry[i], "systhread 0");
+    npinned_pages = get_user_pages(
+            utask, 
+            utask->mm, 
+            /* PAGE_ALIGN((unsigned long)(&(info->sysentry))), [>start address<] */
+            (unsigned long)(&(info->sysentry[0])), /* start address */
+            NUM_PINNED_PAGES, /* number of pinned pages */
+            1,               /* writable flag */
+            0,               /* force flag */
+            pinned_pages, /* struct page ** pointer to pinned pages */
+            NULL);
+
+    if (npinned_pages < 0) {
+        printk("Error on getting pinned pages\n");
+    }
+
+    sysentry_start_addr = kmap(pinned_pages[0]);
+    entry = (struct flexsc_sysentry *)sysentry_start_addr;
+    mypage = virt_to_page(info->sysentry);
+
+    printk("# of pinned pages:                   %d\n", npinned_pages);
+    printk("pinned_pages[0]                      %p\n", pinned_pages[0]);
+    printk("page_address(pinned_pages[0]):       %p\n", page_address(pinned_pages[0]));
+    printk("sysentry_start_addr:                 %p\n", sysentry_start_addr);
+
+    printk("physical address                     %p\n", (void *)physical_address);
+    printk("info->sysentry                       %p\n", info->sysentry);
+    printk("__pa(info->sysentry)                 %p\n", (void *)__pa(info->sysentry));
+    printk("virt_to_page(sysentry)               %p, %p, %ld\n", mypage, virt_to_page(info->sysentry),virt_to_page(info->sysentry));
+
+#define virt_to_pfn(kaddr)	(__pa(kaddr) >> PAGE_SHIFT)
+    printk("virt_to_pfn(sysentry)                %p\n", virt_to_pfn(info->sysentry));
+    printk("virt_to_phys(sysentry)               %p\n", (void *)virt_to_phys(info->sysentry));
+
+    printk("page->virt                           %p\n", page_address(virt_to_page(info->sysentry)));
+    printk("%20s\n", "After kamp(pinned_pages)");
+
+    print_multiple_sysentry(entry, 8);
+    /* entry[0].sysnum = 1000; */
+    info->sysentry[0].sysnum = 9999;
+    print_multiple_sysentry(entry, 1);
+
+    kstruct = kthread_run(kmain, (void *)entry, "systhread 0");
     /* print_sysentry(&entry[1]); */
     return 0;
 }
@@ -169,10 +242,15 @@ int syscall_hooking_init(void)
 void syscall_hooking_cleanup(void)
 {
     unsigned long cr0 = read_cr0();
+    int i;
     write_cr0(cr0 & ~0x00010000);
     sys_call_table[__NR_flexsc_register] = original_call;
     write_cr0(cr0);
     printk("Hooking moudle cleanup\n");
+
+    for (i = 0; i < NUM_PINNED_PAGES; i++) {
+        kunmap(pinned_pages[i]);
+    }
 
     /* kthread_stop(kstruct); */
     return;

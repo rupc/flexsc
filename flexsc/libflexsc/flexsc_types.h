@@ -34,11 +34,11 @@ struct flexsc_cb {
 
 // 48(8 * 6) + 16(4 * 4) = 64 bytes
 struct flexsc_sysentry {
-    long args[6];
     unsigned nargs;
     unsigned rstatus;
     unsigned sysnum;
     unsigned sysret;
+    long args[6];
 } ____cacheline_aligned_in_smp;
 
 struct flexsc_init_info {

@@ -72,11 +72,11 @@ struct flexsc_cpuinfo {
  * @brief Define syscall entry. It should be same as cache line(64 bytes)
  */
 struct flexsc_sysentry {
-    long args[6];
     unsigned nargs;
     unsigned rstatus;
     unsigned sysnum;
     unsigned sysret;
+    long args[6];
 } ____cacheline_aligned_in_smp;
 
 
