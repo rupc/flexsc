@@ -1,9 +1,12 @@
-name=syscall_hooking
-obj-m = $(addsuffix .o,$(name))
+name=syshook
+obj-m := $(addsuffix .o,$(name))
+# syshook-objs := print.o
 
 KERNEL_DIR = /lib/modules/$(shell uname -r)/build
 PWD = $(shell pwd)
-ALREADY_INSTERTTED=$(shell lsmod | grep syscall_hooking | awk '{print $1;}')
+ALREADY_INSTERTTED=$(shell lsmod | grep syscall_hooking | awk '{print $$1;}')
+
+ccflags-y=-I$(PWD)
 
 
 default :
