@@ -17,10 +17,10 @@ ifneq ($(ALREADY_INSTERTTED),)
 	sudo rmmod $(name)
 endif
 	sudo insmod $(name).ko
-	dmesg
+	# dmesg
+	../user/user-program
 
 user:
-	../user/user-program
 
 
 rm :

@@ -68,8 +68,8 @@ int main(int argc, const char *argv[])
      */
     entry = flexsc_register(&info);
     printf("After registering flexsc\n");
-    sleep(5);
-    entry[3].rstatus = 5;
+    sleep(3);
+    /* entry[3].rstatus = 5;
     entry[3].nargs = 6;
     entry[3].sysnum = 3;
     entry[3].sysret = 4;
@@ -78,36 +78,39 @@ int main(int argc, const char *argv[])
     entry[3].args[2] = 103;
     entry[3].args[3] = 105;
     entry[3].args[4] = 107;
-    entry[3].args[5] = 109;
+    entry[3].args[5] = 109; */
 
-    /* num_entry = info.nentry;
-    printf("Number of entry: %d\n", num_entry);
+/*
+ *     num_entry = info.nentry;
+ *     printf("Number of entry: %d\n", num_entry);
+ * 
+ *     [>Print global entry whether it is set as expected<]
+ *     print_sysentry(gentry);
+ * 
+ *     [>Print info of created sysentries<]
+ *     for (i = 0; i < num_entry; i++) {
+ *         print_sysentry(&entry[i]);
+ *     }
+ */
 
-    [>Print global entry whether it is set as expected<]
-    print_sysentry(gentry);
-
-    [>Print info of created sysentries<]
-    for (i = 0; i < num_entry; i++) {
-        print_sysentry(&entry[i]);
-    }
-
-    [>Call getpid() - flexsc version<]
+    /* Call getpid() - flexsc version*/
     receiver = flexsc_getpid();
 
-    [>Do something until issued system call is done<]
+    /* Do something until issued system call is done */
     while (receiver->rstatus != FLEXSC_STATUS_DONE) {
         sleep(1);
-        printf("count: %d\n", cnt++);
+        printf("wait count: %d\n", cnt++);
     }
 
-    [>Consumes return value<]
+    /*Consumes return value*/
     mypid = receiver->sysret;
 
-    [>Change a entry to FREE<]
+    /*Change a entry to FREE*/
+    asm volatile ("" : : : "memory");
     receiver->rstatus = FLEXSC_STATUS_FREE;
 
-    [>Usage of sysret<]
-    printf("PID: %d\n", mypid); */
+    /*Usage of sysret*/
+    printf("PID: %d\n", mypid);
 
     /* Wait until it gets SIGTERM */
     while (1) {

@@ -30,23 +30,59 @@ int queue_worker(void *arg)
             do_exit(0);
         }
 
-        /* for (i = 0; i < NUM_SYSENTRY; i++) {
+        for (i = 0; i < NUM_SYSENTRY; i++) {
             if (entry[i].rstatus == FLEXSC_STATUS_SUBMITTED) {
-                printk("entry[%d].rstatus == SUBMITTED %d\n", i);
+                printk("entry[%d].rstatus == SUBMITTED\n", i);
+
+                entry[i].rstatus = FLEXSC_STATUS_BUSY;
+                queue_work_on(DEFAULT_CPU, sys_workqueue, &sys_works[i]);
+
+                entry[i].sysret = utask->pid;
+                /* ssleep(3); */
+                print_sysentry(&entry[i]);
             }
-        } */
-        printk("*****************  entry[3]  *****************\n");
-        print_sysentry(&entry[3]);
+        }
+        /* printk("*****************  entry[3]  *****************\n");
+        print_sysentry(&entry[3]); */
 
-        schedule_timeout(HZ);
-        ssleep(3);
         /* printk("hello! %d\n", cnt++); */
-
-
+        schedule_timeout(HZ);
     }
     return 0;
 }
 
+typedef long (*sys_call_ptr_t)(long, long, long,
+                               long, long, long);
+static __always_inline long
+do_syscall(unsigned int sysnum, long sysargs[]) {
+    if (unlikely(sysnum >= __SYSNUM_flexsc_base)) {
+        return -1;
+    }
+
+    if (likely(sysnum < 500)) {
+        return ((sys_call_ptr_t *)sys_call_table)[sysnum](sysargs[0], sysargs[1],
+                                       sysargs[2], sysargs[3],
+                                       sysargs[4], sysargs[5]);
+    }
+
+    return -ENOSYS;
+}
+
+static void syscall_handler(struct work_struct *work)
+{
+    struct flexsc_sysentry *entry = work->work_entry;
+    long sysret;
+
+    sysret = do_syscall(entry->sysnum, entry->args);
+
+    if (sysret == -ENOSYS) {
+        printk("%d %s: do_syscall failed!\n", __LINE__, __func__);
+    }
+
+    entry->sysret = sysret;
+    entry->rstatus = FLEXSC_STATUS_DONE;
+    return;
+}
 
 struct task_struct *kstruct;
 asmlinkage long 
@@ -83,7 +119,13 @@ sys_hook_flexsc_register(struct flexsc_init_info __user *info)
     entry = (struct flexsc_sysentry *)sysentry_start_addr;
     print_multiple_sysentry(entry, 8);
 
-    kstruct = kthread_create(queue_worker, (void *)entry, "flexsc queueing hread");
+    sys_workqueue = create_workqueue("flexsc_workqueue");
+    sys_works = (struct work_struct *)kmalloc(sizeof(struct work_struct) * NUM_SYSENTRY, GFP_KERNEL);
+    for (i = 0; i < NUM_SYSENTRY; i++) {
+        FLEXSC_INIT_WORK(&sys_works[i], syscall_handler, &(info->sysentry[i]));
+    }
+
+    kstruct = kthread_create(queue_worker, (void *)entry, "flexsc queueing thread");
     kthread_bind(kstruct, DEFAULT_CPU); 
 
     if (IS_ERR(kstruct)) {
