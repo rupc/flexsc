@@ -15,11 +15,21 @@ int queue_worker(void *arg)
     int cnt = 0;
     int i;
 
-    printk("kthread[%d, %d], user[%d, %d] starts\n", current->pid, current->parent->pid, utask->pid, utask->parent->pid);
-    printk("*****************  entry[3] before main loop  *****************\n");
-    print_sysentry(&entry[3]);
+    BUG_ON(DEFAULT_CPU != smp_processor_id());
+
+    printk("kthread[%d %d %d %d], user[%d, %d] starts\n", current->pid, current->parent->pid, DEFAULT_CPU, smp_processor_id(), utask->pid, utask->parent->pid);
+
+    /* printk("*****************  entry[3] before main loop  *****************\n");
+    print_sysentry(&entry[3]); */
 
     while (1) {
+        set_current_state(TASK_UNINTERRUPTIBLE);
+
+        if (kthread_should_stop()) {
+            printk("kernel thread dying...\n");
+            do_exit(0);
+        }
+
         /* for (i = 0; i < NUM_SYSENTRY; i++) {
             if (entry[i].rstatus == FLEXSC_STATUS_SUBMITTED) {
                 printk("entry[%d].rstatus == SUBMITTED %d\n", i);
@@ -28,13 +38,10 @@ int queue_worker(void *arg)
         printk("*****************  entry[3]  *****************\n");
         print_sysentry(&entry[3]);
 
+        schedule_timeout(HZ);
         ssleep(3);
         /* printk("hello! %d\n", cnt++); */
 
-        if (kthread_should_stop()) {
-            printk("kernel thread dying...\n");
-            do_exit(0);
-        }
 
     }
     return 0;
@@ -45,7 +52,7 @@ struct task_struct *kstruct;
 asmlinkage long 
 sys_hook_flexsc_register(struct flexsc_init_info __user *info)
 {
-    int i, npinned_pages;
+    int i, err, npinned_pages;
     struct flexsc_sysentry *entry;
     /* phys_addr_t physical_address; */
 
@@ -63,7 +70,7 @@ sys_hook_flexsc_register(struct flexsc_init_info __user *info)
             (unsigned long)(&(info->sysentry[0])), /* Start address to map */
             NUM_PINNED_PAGES, /* Number of pinned pages */
             1,               /* Writable flag */
-            0,               /* Force flag */
+            1,               /* Force flag */
             pinned_pages, /* struct page ** pointer to pinned pages */
             NULL);
 
@@ -76,7 +83,18 @@ sys_hook_flexsc_register(struct flexsc_init_info __user *info)
     entry = (struct flexsc_sysentry *)sysentry_start_addr;
     print_multiple_sysentry(entry, 8);
 
-    kstruct = kthread_run(queue_worker, (void *)entry, "flexsc-systhread");
+    kstruct = kthread_create(queue_worker, (void *)entry, "flexsc queueing hread");
+    kthread_bind(kstruct, DEFAULT_CPU); 
+
+    if (IS_ERR(kstruct)) {
+        printk("queueing thread creation fails\n");
+        err = PTR_ERR(kstruct);
+        kstruct = NULL;
+        return err;
+    }
+
+    wake_up_process(kstruct);
+
     return 0;
 }
 
@@ -89,10 +107,15 @@ sys_hook_flexsc_exit(void)
         kunmap(pinned_pages[i]);
     }
 
-    ret = kthread_stop(kstruct);
+    if (kstruct) {
+        ret = kthread_stop(kstruct);
+        kstruct = NULL;
+    }
+
     if (!ret) {
         printk("kthread stopped\n");
     }
+
     printk("flexsc_exit hooked end\n");
     return 0;
 }
