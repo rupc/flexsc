@@ -34,8 +34,10 @@ trying to implement flexsc on ubuntu-linux 4.4.0. At now, codebase is dirty & me
 If you have a plan to make use of kernel_thread() in user context(when system call), annoying segfault error message arises. So you should take *different approach* to FlexSC because at the time when the paper is written(linux 2.6), it is possible to simply call kernel_thread() to create kernel_thread with sharing memory of calling user space process. But on recent kernel, kernel_thread() with (CLONE_FILES | CLONE_FD | CLONE_VM) flag causes segmentation fault. (See [kernel_thread() causes segfault](http://www.spinics.net/lists/newbies/msg57445.html))
 
 ## Modified files list(Not yet complete list)
-- Makefile -> Add flexsc 
+- Makefile
 - flexsc/
 - include/linux/sched.h - struct task_struct -> Add struct syspage
-- arch/x86/entry/syscalls/syscall_64.tbl -> Add system call 400. flexsc_register, 401 flexsc_wait, 402 flexsc_start_hook
-- arch/x86/entry/entry_64.S -> Add system call hooking function
+- arch/x86/entry/syscalls/syscall_64.tbl -> Add system call: flexsc_register(400), flexsc_wait(401), flexsc_start_hook(402), flexsc_exit(403)
+- arch/x86/entry/entry_64.S -> system call hooking function in assembly level
+- include/linux/workqueue.h -> struct flexsc_sysentry *work_entry in struct work_struct
+- include/linux/workqueue.h -> FLEXSC_INIT_WORK
