@@ -71,9 +71,8 @@ static void syscall_handler(struct work_struct *work)
 {
     struct flexsc_sysentry *entry = work->work_entry;
     long sysret;
-    printk("%p\n", work->work_entry);
 
-    /* print_sysentry(entry); */
+    print_sysentry(entry);
 
     /* sysret = do_syscall(entry->sysnum, entry->args); */
     sysret = 5;
@@ -82,8 +81,8 @@ static void syscall_handler(struct work_struct *work)
         printk("%d %s: do_syscall failed!\n", __LINE__, __func__);
     }
 
-    /* entry->sysret = sysret;
-    entry->rstatus = FLEXSC_STATUS_DONE; */
+    entry->sysret = sysret;
+    entry->rstatus = FLEXSC_STATUS_DONE;
     return;
 }
 
@@ -98,7 +97,8 @@ sys_hook_flexsc_register(struct flexsc_init_info __user *info)
     utask = current;
 
     /* Print first 8 sysentries */
-    /* print_multiple_sysentry(info->sysentry, 8); */
+    pretty_print_emph("User address space");
+    print_multiple_sysentry(info->sysentry, 8);
 
     /* Get syspage from user space 
      * and map it to kernel virtual address space */
@@ -120,7 +120,9 @@ sys_hook_flexsc_register(struct flexsc_init_info __user *info)
     sysentry_start_addr = kmap(pinned_pages[0]);
 
     entry = (struct flexsc_sysentry *)sysentry_start_addr;
-    /* print_multiple_sysentry(entry, 8); */
+
+    pretty_print_emph("Kernel address space");
+    print_multiple_sysentry(entry, 8);
 
     sys_workqueue = create_workqueue("flexsc_workqueue");
     sys_works = (struct work_struct *)kmalloc(sizeof(struct work_struct) * NUM_SYSENTRY, GFP_KERNEL);
@@ -166,8 +168,13 @@ sys_hook_flexsc_exit(void)
         printk("kthread stopped\n");
     }
 
-    destroy_workqueue(flexsc_workqueue);
-    kfree(sys_works);
+    if (!sys_workqueue) {
+        destroy_workqueue(sys_workqueue);
+    }
+
+    if (!sys_works) {
+        kfree(sys_works);
+    }
 
 
     printk("flexsc_exit hooked end\n");
@@ -247,6 +254,7 @@ void print_multiple_sysentry(struct flexsc_sysentry *entry, size_t n)
         print_sysentry(&entry[i]);
     }
 }
+
 
 void address_stuff(void *addr)
 {

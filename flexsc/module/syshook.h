@@ -50,6 +50,11 @@ unsigned long **locate_sys_call_table(void);
 
 void print_sysentry(struct flexsc_sysentry *entry);
 void print_multiple_sysentry(struct flexsc_sysentry *entry, size_t n);
+
+inline void pretty_print_emph(char *s)
+{
+    printk("******************** %s ********************\n", s);
+}
 void address_stuff(void *addr);
 
 
