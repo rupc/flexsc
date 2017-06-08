@@ -37,9 +37,8 @@ int queue_worker(void *arg)
                 entry[i].rstatus = FLEXSC_STATUS_BUSY;
                 queue_work_on(DEFAULT_CPU, sys_workqueue, &sys_works[i]);
 
-                entry[i].sysret = utask->pid;
+                /* entry[i].sysret = utask->pid; */
                 /* ssleep(3); */
-                print_sysentry(&entry[i]);
             }
         }
         /* printk("*****************  entry[3]  *****************\n");
@@ -72,15 +71,19 @@ static void syscall_handler(struct work_struct *work)
 {
     struct flexsc_sysentry *entry = work->work_entry;
     long sysret;
+    printk("%p\n", work->work_entry);
 
-    sysret = do_syscall(entry->sysnum, entry->args);
+    /* print_sysentry(entry); */
+
+    /* sysret = do_syscall(entry->sysnum, entry->args); */
+    sysret = 5;
 
     if (sysret == -ENOSYS) {
         printk("%d %s: do_syscall failed!\n", __LINE__, __func__);
     }
 
-    entry->sysret = sysret;
-    entry->rstatus = FLEXSC_STATUS_DONE;
+    /* entry->sysret = sysret;
+    entry->rstatus = FLEXSC_STATUS_DONE; */
     return;
 }
 
@@ -95,7 +98,7 @@ sys_hook_flexsc_register(struct flexsc_init_info __user *info)
     utask = current;
 
     /* Print first 8 sysentries */
-    print_multiple_sysentry(info->sysentry, 8);
+    /* print_multiple_sysentry(info->sysentry, 8); */
 
     /* Get syspage from user space 
      * and map it to kernel virtual address space */
@@ -117,12 +120,17 @@ sys_hook_flexsc_register(struct flexsc_init_info __user *info)
     sysentry_start_addr = kmap(pinned_pages[0]);
 
     entry = (struct flexsc_sysentry *)sysentry_start_addr;
-    print_multiple_sysentry(entry, 8);
+    /* print_multiple_sysentry(entry, 8); */
 
     sys_workqueue = create_workqueue("flexsc_workqueue");
     sys_works = (struct work_struct *)kmalloc(sizeof(struct work_struct) * NUM_SYSENTRY, GFP_KERNEL);
+    if (sys_works == NULL) {
+        printk("Error on allocating sys_works\n");
+        return -1;
+    }
+
     for (i = 0; i < NUM_SYSENTRY; i++) {
-        FLEXSC_INIT_WORK(&sys_works[i], syscall_handler, &(info->sysentry[i]));
+        FLEXSC_INIT_WORK(&sys_works[i], syscall_handler, &(entry[i]));
     }
 
     kstruct = kthread_create(queue_worker, (void *)entry, "flexsc queueing thread");
@@ -157,6 +165,10 @@ sys_hook_flexsc_exit(void)
     if (!ret) {
         printk("kthread stopped\n");
     }
+
+    destroy_workqueue(flexsc_workqueue);
+    kfree(sys_works);
+
 
     printk("flexsc_exit hooked end\n");
     return 0;
