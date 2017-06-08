@@ -24,7 +24,7 @@
 #include <stdarg.h>
 #include <sched.h>
 #include <stdio.h>
-
+#include <sys/stat.h>
 #include "flexsc_cpu.h"
 #include "flexsc_types.h"
 #include "syscall_info.h"

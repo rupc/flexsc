@@ -1,5 +1,16 @@
 #include "flexsc_syscalls.h"
 
+
+struct flexsc_sysentry* flexsc_getppid()
+{
+    struct flexsc_sysentry *entry;
+    entry = free_syscall_entry();
+    entry->sysnum = __NR_getppid;
+    entry->nargs = __ARGS_getppid;
+    entry->rstatus = FLEXSC_STATUS_SUBMITTED;
+    return entry;
+}
+
 struct flexsc_sysentry* flexsc_getpid()
 {
     struct flexsc_sysentry *entry;
@@ -22,6 +33,25 @@ struct flexsc_sysentry* flexsc_write(unsigned int fd, char  *buf, size_t count)
     entry = free_syscall_entry();
     request_syscall_write(entry, fd, buf, count);
     return entry;
+}
+
+
+struct flexsc_sysentry* flexsc_stat(const char *pathname, struct stat *statbuf)
+{
+    struct flexsc_sysentry *entry;
+    entry = free_syscall_entry();
+    request_syscall_stat(entry, pathname, statbuf);
+    return entry;
+}
+
+
+void request_syscall_stat(struct flexsc_sysentry *entry, const char *pathname, struct stat *statbuf)
+{
+    entry->sysnum = __NR_stat;
+    entry->nargs = __ARGS_stat;
+    entry->rstatus = FLEXSC_STATUS_SUBMITTED;
+    entry->args[0] = (long)pathname;
+    entry->args[1] = (long)statbuf;
 }
 
 void request_syscall_read(struct flexsc_sysentry *entry, unsigned int fd, char *buf, size_t count)
