@@ -9,15 +9,17 @@
 #include "syshook.h"
 
 /* syscall thread main function */
-int queue_worker(void *arg)
+int scanner_thread(void *arg)
 {
     struct flexsc_sysentry *entry = (struct flexsc_sysentry *)arg;
-    int cnt = 0;
-    int i;
+    int cnt = 0, i, cpu, ret;
+    cpu = smp_processor_id();
 
-    BUG_ON(DEFAULT_CPU != smp_processor_id());
+    BUG_ON(DEFAULT_CPU != cpu);
 
-    printk("kthread[%d %d %d %d], user[%d, %d] starts\n", current->pid, current->parent->pid, DEFAULT_CPU, smp_processor_id(), utask->pid, utask->parent->pid);
+    printk("kthread[%d %d %d %d], user[%d, %d] starts\n",
+            current->pid, current->parent->pid, DEFAULT_CPU, cpu,
+            utask->pid, utask->parent->pid);
 
     /* printk("*****************  entry[3] before main loop  *****************\n");
     print_sysentry(&entry[3]); */
@@ -35,7 +37,12 @@ int queue_worker(void *arg)
                 printk("entry[%d].rstatus == SUBMITTED\n", i);
 
                 entry[i].rstatus = FLEXSC_STATUS_BUSY;
-                queue_work_on(DEFAULT_CPU, sys_workqueue, &sys_works[i]);
+                ret = queue_work_on(DEFAULT_CPU, sys_workqueue, &sys_works[i]);
+                
+                if (ret == NULL) {
+                    printk("sys_work already queued\n");
+
+                }
 
                 /* entry[i].sysret = utask->pid; */
                 /* ssleep(3); */
@@ -74,8 +81,7 @@ static void syscall_handler(struct work_struct *work)
 
     print_sysentry(entry);
 
-    /* sysret = do_syscall(entry->sysnum, entry->args); */
-    sysret = 5;
+    sysret = do_syscall(entry->sysnum, entry->args);
 
     if (sysret == -ENOSYS) {
         printk("%d %s: do_syscall failed!\n", __LINE__, __func__);
@@ -92,7 +98,6 @@ sys_hook_flexsc_register(struct flexsc_init_info __user *info)
 {
     int i, err, npinned_pages;
     struct flexsc_sysentry *entry;
-    /* phys_addr_t physical_address; */
 
     utask = current;
 
@@ -103,15 +108,14 @@ sys_hook_flexsc_register(struct flexsc_init_info __user *info)
     /* Get syspage from user space 
      * and map it to kernel virtual address space */
     npinned_pages = get_user_pages(
-            utask, 
+            utask,      
             utask->mm, /* mm_strcut of user task */
-            /* PAGE_ALIGN((unsigned long)(&(info->sysentry))), [>start address<] */
             (unsigned long)(&(info->sysentry[0])), /* Start address to map */
             NUM_PINNED_PAGES, /* Number of pinned pages */
             1,               /* Writable flag */
             1,               /* Force flag */
             pinned_pages, /* struct page ** pointer to pinned pages */
-            NULL);
+            NULL);          
 
     if (npinned_pages < 0) {
         printk("Error on getting pinned pages\n");
@@ -121,10 +125,9 @@ sys_hook_flexsc_register(struct flexsc_init_info __user *info)
 
     entry = (struct flexsc_sysentry *)sysentry_start_addr;
 
-    pretty_print_emph("Kernel address space");
-    print_multiple_sysentry(entry, 8);
-
     sys_workqueue = create_workqueue("flexsc_workqueue");
+    workqueue_set_max_active(sys_workqueue, NUM_SYSENTRY);
+
     sys_works = (struct work_struct *)kmalloc(sizeof(struct work_struct) * NUM_SYSENTRY, GFP_KERNEL);
     if (sys_works == NULL) {
         printk("Error on allocating sys_works\n");
@@ -135,7 +138,7 @@ sys_hook_flexsc_register(struct flexsc_init_info __user *info)
         FLEXSC_INIT_WORK(&sys_works[i], syscall_handler, &(entry[i]));
     }
 
-    kstruct = kthread_create(queue_worker, (void *)entry, "flexsc queueing thread");
+    kstruct = kthread_create(scanner_thread, (void *)entry, "flexsc scanner thread");
     kthread_bind(kstruct, DEFAULT_CPU); 
 
     if (IS_ERR(kstruct)) {
