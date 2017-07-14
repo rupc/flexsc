@@ -1,5 +1,10 @@
 # flexsc(osdi 2010)
-trying to implement flexsc on ubuntu-linux 4.4.0. At now, codebase is dirty & messy :( :mag: I will clean it up as soon as I make successful communication between kernel thread and user thread via shared memeory.
+
+
+If you are interest in flexsc, reference [kernel module](https://github.com/rupc/flexsc/blob/master/flexsc/module/syshook.c). Other dirty things are just result of trial and error
+---
+
+trying to implement flexsc on ubuntu-linux 4.4.0. At now, codebase is dirty & messy :( :mag: 
 
 ## Key idea of implementing FlexSC
 - Shared memory between kernel thread and user thread in user space(**Not in kernel space**) so that any kernel thread(called systhread in FlexSC) can access the shared memory
