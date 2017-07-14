@@ -1,7 +1,7 @@
 # flexsc(osdi 2010)
 
 
-If you are interest in flexsc, reference [kernel module](https://github.com/rupc/flexsc/blob/master/flexsc/module/syshook.c). Other dirty things are just result of trial and error
+If you are interest in flexsc, reference [kernel module](https://github.com/rupc/flexsc/blob/master/flexsc/module/syshook.c). Other dirty things are just the result of trial and error
 ---
 
 trying to implement flexsc on ubuntu-linux 4.4.0. At now, codebase is dirty & messy :( :mag: 
