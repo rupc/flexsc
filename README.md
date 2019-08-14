@@ -1,6 +1,6 @@
 # flexsc(osdi 2010)
 
-See [summary of this work](https://www.slideshare.net/YongRaeJo/flexsc-101316960)
+See [summary of this work](https://www.slideshare.net/YongraeJo/flexsc-159944810)
 
 If you are interest in flexsc, reference [kernel module](https://github.com/rupc/flexsc/blob/master/flexsc/module/syshook.c). Other dirty things are just the result of trial and error
 ---
